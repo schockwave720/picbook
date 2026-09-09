@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0909-1750 | PicBook Maker</title>
+<title>그림책제조기 v0909-2000 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -58,7 +58,12 @@ select.inp{width:auto;font-family:'Noto Sans KR',sans-serif}
 .hub-row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border)}
 .hub-row b{color:var(--text);font-weight:500}.hub-row .m{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim)}
 .hub-btn{font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer}
-.hub-btn:hover{border-color:var(--accent)}.hub-sec{margin:6px 0 2px;color:var(--accent2);font-weight:600}.tag-hot{background:#ef4444;color:#fff}.tag-fast{background:#f59e0b;color:#000}.tag-new{background:#a855f7;color:#fff}
+.hub-btn:hover{border-color:var(--accent)}
+.orcat{margin-top:4px}.orcat input.inp{font-size:10px;padding:4px 6px;margin-bottom:3px}
+.orlist{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:5px}
+.orrow{display:flex;align-items:center;gap:5px;padding:3px 6px;font-size:9.5px;border-bottom:1px solid var(--border);cursor:pointer}
+.orrow:hover{background:var(--surface2)}.orrow input{width:auto;margin:0}.orrow .n{flex:1;color:var(--text)}.orrow .p{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);white-space:nowrap}
+.orrow .t{font-size:8px;padding:0 3px;border-radius:2px}.t-free{background:#16a34a;color:#fff}.t-new{background:#a855f7;color:#fff}.t-prev{background:#0ea5e9;color:#fff}.t-cheap{background:#f59e0b;color:#000}.t-exp{background:#374151;color:#9ca3af}.hub-sec{margin:6px 0 2px;color:var(--accent2);font-weight:600}.tag-hot{background:#ef4444;color:#fff}.tag-fast{background:#f59e0b;color:#000}.tag-new{background:#a855f7;color:#fff}
 .opt{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:5px;cursor:pointer;font-size:10px;transition:all .15s}
 .opt:hover{border-color:var(--accent)}
 .opt.sel{border-color:var(--green);background:rgba(125,211,168,.12);color:var(--green)}
@@ -102,7 +107,10 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 .toast{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#1a1206;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:700;opacity:0;transform:translateY(6px);transition:all .3s;z-index:999;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer}
-.modal img{max-width:95vw;max-height:80vh;object-fit:contain;border-radius:6px}
+.modal{padding:0;overflow:auto}.modal img{max-width:100vw;max-height:calc(100vh - 54px);object-fit:contain;border-radius:0;cursor:zoom-in;transition:transform .15s}
+.modal.zoomed img{max-width:none;max-height:none;width:220vw;cursor:zoom-out}
+.modal-bar{position:fixed;bottom:0;left:0;right:0;justify-content:center;background:rgba(0,0,0,.55);padding:8px;margin:0}
+.modal-cnt{position:fixed;top:8px;left:12px;font-size:11px;color:#ccc;font-family:'JetBrains Mono',monospace}
 .modal-bar{display:flex;gap:8px;margin-top:12px}
 .modal-btn{padding:8px 18px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .modal-btn:hover{background:rgba(255,255,255,.25);border-color:var(--accent)}
@@ -114,7 +122,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-1750</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-2000</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -192,6 +200,8 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
   <div class="card-body">
     <select class="inp" id="styleSel" style="width:100%;font-size:11px;padding:6px 8px"></select>
     <div id="styleDesc" style="font-size:9px;color:var(--dim);margin-top:4px;line-height:1.5"></div>
+    <textarea class="note" id="styleText" style="margin-top:6px;min-height:52px" placeholder="🎨 화풍 직접 지시 (쓰면 위 프리셋보다 우선한다. 프리셋은 빈틈만 메운다)
+예) 김홍도 풍속화의 선에 사이버펑크 네온을 얹어라 / 1970년대 일본 극화, 잉크 번짐, 스크린톤 / NAI 작가 태그: 1.3::artist:sajipen::, 1.1::artist:ciloranko::"></textarea>
   </div>
 </div>
 
@@ -218,10 +228,20 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
       <label class="opt sel"><input type="radio" name="cTone" value="docent" checked> 미술관 도슨트</label>
       <label class="opt"><input type="radio" name="cTone" value="bar"> 위스키 바 옆자리 평론가</label>
       <label class="opt"><input type="radio" name="cTone" value="poet"> 시인</label>
+      <label class="opt"><input type="radio" name="cTone" value="surgeon"> 수술기록지</label>
+      <label class="opt"><input type="radio" name="cTone" value="parable"> 성경 비유체</label>
+      <label class="opt"><input type="radio" name="cTone" value="sillok"> 조선 실록 사관</label>
+      <label class="opt"><input type="radio" name="cTone" value="noir"> 하드보일드 탐정</label>
+      <label class="opt"><input type="radio" name="cTone" value="metal"> 헤비메탈 라이너노트</label>
+      <label class="opt"><input type="radio" name="cTone" value="kid"> 그림책 낭독</label>
+      <label class="opt"><input type="radio" name="cTone" value="letter"> 누군가에게 쓰는 편지</label>
+      <label class="opt"><input type="radio" name="cTone" value="copy"> 광고 카피 한 줄</label>
+      <label class="opt"><input type="radio" name="cTone" value="arca"> 익명 갤러리 평론</label>
+      <label class="opt"><input type="radio" name="cTone" value="custom"> ✍️ 아래 칸대로만</label>
       <label class="opt"><input type="radio" name="cTone" value="none"> 논평 없이 프롬프트만</label>
     </div>
-    <textarea class="note" id="cInstr" placeholder="추가 지시: 문체, 방향, 강조점, 금기 등 자유롭게.
-예) 반말로 써라 / 빛과 그림자 해설에 집중 / 역사적 맥락 한 줄 포함 / 감상자에게 질문 하나 던지며 끝내라"></textarea>
+    <textarea class="note" id="cInstr" placeholder="✍️ 자유 지시 — 여기 쓴 글이 위 버튼들보다 강하다. 충돌하면 이 칸이 이긴다.
+예) 반말, 욕 한 번 섞어라 / 의사 동료한테 설명하듯 / 마지막 문장은 반드시 질문 / 한자어 금지 / 3인칭 '그 남자'로만 / 논평 끝에 이 그림의 약점 한 줄"></textarea>
   </div>
 </div>
 
@@ -326,6 +346,16 @@ const TONE_HINT={
   docent:'Voice: a museum docent — lucid, warm, guiding the viewer\'s eye through composition, light, color and symbolism.',
   bar:'Voice: a witty critic on the next barstool at a whisky bar — direct, a little irreverent, vivid metaphors, no academic hedging.',
   poet:'Voice: a poet — compressed, imagistic, musical Korean; may break lines; no explanations.',
+  surgeon:'Voice: a neurosurgeon\'s operative note — clipped, numbered findings, anatomical precision applied to composition (approach, exposure, hemostasis of light), zero sentiment, one dry line at the end.',
+  parable:'Voice: a parable in the cadence of the Gospels — "a certain man...", concrete images carrying one moral turn, ends with a line that lands like a verdict. No preaching.',
+  sillok:'Voice: a Joseon annals historian (실록 사관) — third person, dated, terse court chronicle; ends with "사신은 논한다:" and one sharp judgment.',
+  noir:'Voice: hard-boiled detective narration — first person, short sentences, rain, cigarettes, the picture is a crime scene and every detail is a clue.',
+  metal:'Voice: heavy-metal album liner notes — loud, mythic, profane where it earns it, riffs on light and shadow like guitar tones.',
+  kid:'Voice: a picture-book read aloud to a child — simple words, rhythm, one question to the listener, wonder without saccharine.',
+  letter:'Voice: a letter to one specific person the owner names (or "to you" if unnamed) — intimate, second person, the picture is the reason for writing.',
+  copy:'Voice: an ad copywriter — one headline under 12 words, then two lines of body copy. Nothing else.',
+  arca:'Voice: an anonymous imageboard critic (아카라이브 톤) — blunt, slangy Korean, honest about what works and what is slop, no politeness.',
+  custom:'Voice: EXACTLY as the OWNER\'S FREE-TEXT INSTRUCTIONS specify. Ignore every other voice guidance.',
   none:'Commentary: leave the "commentary" field as an empty string.',
 };
 const PROG_HINT={
@@ -337,6 +367,8 @@ const PROG_HINT={
 
 function buildCuratorPrompt(){
   const style=STYLES[document.getElementById('styleSel').value]||STYLES.auto;
+  const styleText=document.getElementById('styleText').value.trim();
+  const styleDir=styleText?`OWNER'S STYLE DIRECTION (verbatim, HIGHEST priority — overrides the preset on any conflict; the preset below only fills what the owner left unsaid):\n${styleText}\nPreset fallback: ${style.hint}`:style.hint;
   const len=document.querySelector('input[name="cLen"]:checked')?.value||'normal';
   const tone=document.querySelector('input[name="cTone"]:checked')?.value||'docent';
   const instr=document.getElementById('cInstr').value.trim();
@@ -344,21 +376,21 @@ function buildCuratorPrompt(){
   const prog=document.getElementById('progression').value;
   const ori=document.getElementById('orientation').value;
   return `You are an art curator and a master prompt engineer for image-generation models.
-Given a SEED (a word, theme, line of poetry, scene, or a reference image), you interpret it, write a short Korean commentary, and write English image prompts — one per scene, in two dialects.
+${instr?`=== OWNER'S FREE-TEXT INSTRUCTIONS (ABSOLUTE PRIORITY — override voice preset, length, style preset, everything below) ===\n${instr}\n=== END OWNER'S INSTRUCTIONS ===\n`:''}Given a SEED (a word, theme, line of poetry, scene, or a reference image), you interpret it, write a short Korean commentary, and write English image prompts — one per scene, in two dialects.
 
-STYLE DIRECTION: ${style.hint}
+STYLE DIRECTION: ${styleDir}
 ${pages>1?`SERIES: Produce exactly ${pages} scenes. ${PROG_HINT[prog]}
 First write a "character_sheet": a compact English description of the protagonist(s), wardrobe, palette and rendering style that must be repeated verbatim inside EVERY scene prompt so the pages stay consistent.`:'Produce exactly 1 scene. character_sheet may be an empty string.'}
 ORIENTATION: ${ori==='auto'?'Decide the best canvas for THIS image: "landscape" (16:9), "portrait" (2:3) or "square". Explain the choice in one clause of the commentary.':'Use "'+ori+'" for every scene.'}
 
 COMMENTARY (Korean): ${LEN_HINT[len]} ${TONE_HINT[tone]}
 Never duplicate a term in both Korean and English; pick one. No greetings, no "이 작품은" openers, no disclaimers.
-${instr?'ADDITIONAL INSTRUCTIONS FROM THE OWNER (highest priority): '+instr:''}
+${instr?'FINAL CHECK before answering: re-read the OWNER\'S FREE-TEXT INSTRUCTIONS at the top. If any sentence of your output conflicts with them, the owner wins — rewrite that sentence.':''}
 
 PROMPT DIALECTS:
 - prompt_natural: 60-120 English words of flowing description for GPT Image / Gemini Nano Banana / Grok. Subject → action → setting → lighting → lens/composition → medium/style → mood. Concrete nouns, no meta-talk ("an image of").
-- prompt_tags: Danbooru-style comma-separated tags for NovelAI V5. Start with quality tags "very aesthetic, best quality, absurdres, no text" (NEVER use "masterpiece", "4k", "8k", "ultra detailed" — dead tokens for NovelAI), then subject/count tags, then scene, then style tags${style.tags?' including: '+style.tags:''}. Use {curly braces} to emphasize the key tag. No sentences.
-- negative: comma-separated things to avoid${style.neg?' (always include: '+style.neg+')':''}.
+- prompt_tags: Danbooru-style comma-separated tags for NovelAI V5. Start with quality tags "very aesthetic, best quality, absurdres, no text" (NEVER use "masterpiece", "4k", "8k", "ultra detailed" — dead tokens for NovelAI), then subject/count tags, then scene, then style tags${styleText?' — derive them from the OWNER\'S STYLE DIRECTION first (if the owner wrote NAI artist tags like 1.3::artist:x::, copy them VERBATIM at the very front of prompt_tags)':''}${style.tags?(styleText?', and only then':' including')+': '+style.tags:''}. Emphasis syntax: 1.2::tag:: only (never (tag:1.2), never triple-nested braces). No sentences.
+- negative: comma-separated things to avoid${style.neg?(styleText?' (preset suggests: '+style.neg+' — drop any that contradict the OWNER\'S STYLE DIRECTION)':' (always include: '+style.neg+')'):''}.
 
 OUTPUT: valid JSON only, no markdown fences, no commentary outside JSON:
 {"title":"한글 제목","style":"chosen style in English","orientation":"landscape|portrait|square","character_sheet":"...","commentary":"한글 논평","scenes":[{"n":1,"scene_ko":"장면 한 줄 요약(한글)","prompt_natural":"...","prompt_tags":"...","negative":"..."}]}`;
@@ -548,7 +580,8 @@ async function runAll(){
           slot.className='img-card';
           const im=document.createElement('img');im.src=url;im.alt=title;
           const fname=safeName(`${plan.title||'untitled'}_${si+1}_${eng}_${k+1}`);
-          im.addEventListener('click',()=>saveImage(im.src,fname));
+          LIGHT.push({src:url,fname});
+          im.addEventListener('click',()=>showModal(im.src,fname));im.style.cursor='zoom-in';
           const lab=el('div','lab');lab.appendChild(el('span','',IMG_LABELS[eng]+(count>1?' #'+(k+1):'')));
           const bt=el('div');bt.style.display='flex';bt.style.gap='3px';
           const zb=el('button','btn-sm','🔍');zb.addEventListener('click',()=>showModal(im.src,fname));
@@ -621,13 +654,23 @@ function downloadImg(src,fname){
   else go(src,'png');
   showToast('💾 다운로드');
 }
+const LIGHT=[]; // [{src,fname}] 갤러리 등록 순
 function showModal(src,fname){
-  const m=el('div','modal');const im=document.createElement('img');im.src=src;
+  let idx=LIGHT.findIndex(x=>x.src===src);if(idx<0){LIGHT.push({src,fname});idx=LIGHT.length-1;}
+  const m=el('div','modal');const im=document.createElement('img');const cnt=el('div','modal-cnt');
+  const show=i=>{idx=(i+LIGHT.length)%LIGHT.length;src=LIGHT[idx].src;fname=LIGHT[idx].fname;im.src=src;cnt.textContent=`${idx+1} / ${LIGHT.length}`;m.classList.remove('zoomed');};
+  im.addEventListener('click',e=>{e.stopPropagation();m.classList.toggle('zoomed');if(m.classList.contains('zoomed'))im.scrollIntoView({block:'center',inline:'center'});});
+  let tx=0;m.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+  m.addEventListener('touchend',e=>{if(m.classList.contains('zoomed'))return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>60)show(idx+(dx<0?1:-1));},{passive:true});
+  const key=e=>{if(e.key==='Escape'){m.remove();document.removeEventListener('keydown',key);}else if(e.key==='ArrowRight')show(idx+1);else if(e.key==='ArrowLeft')show(idx-1);};
+  document.addEventListener('keydown',key);
   const bar=el('div','modal-bar');
+  const bp=el('button','modal-btn','◀');bp.addEventListener('click',e=>{e.stopPropagation();show(idx-1);});
+  const bn=el('button','modal-btn','▶');bn.addEventListener('click',e=>{e.stopPropagation();show(idx+1);});
   const b1=el('button','modal-btn','☁️ Drive 저장');b1.addEventListener('click',e=>{e.stopPropagation();saveImage(src,fname);});
   const b2=el('button','modal-btn','💾 다운로드');b2.addEventListener('click',e=>{e.stopPropagation();downloadImg(src,fname);});
-  const b3=el('button','modal-btn','✕');b3.addEventListener('click',()=>m.remove());
-  bar.append(b1,b2,b3);m.append(im,bar);m.addEventListener('click',e=>{if(e.target===m)m.remove();});document.body.appendChild(m);
+  const b3=el('button','modal-btn','✕');b3.addEventListener('click',()=>{m.remove();document.removeEventListener('keydown',key);});
+  bar.append(bp,b1,b2,b3,bn);m.append(cnt,im,bar);m.addEventListener('click',e=>{if(e.target===m){m.remove();document.removeEventListener('keydown',key);}});document.body.appendChild(m);show(idx);
 }
 
 // ===== UI 렌더 / INIT =====
@@ -656,6 +699,7 @@ function renderModels(){
       if(m.ghost){lab.appendChild(el('span','tag tag-ghost','☠️'));lab.title='프로바이더 /models 목록에 없는 ID — 레이더로 확인';}
       body.appendChild(lab);
     });
+    if(k==='openrouter'){const cw=el('div');cw.style.cssText='padding:0 6px 6px';orRender(cw);body.appendChild(cw);}
     box.append(h,body);list.appendChild(box);
   });
 }
@@ -710,6 +754,7 @@ async function hubCheck(force){
       fresh.slice(0,pid==='openrouter'?12:20).forEach(x=>{report.fresh.push({pid,...x});if(auto&&pid!=='openrouter')hubAdopt(pid,x);});}
     known[pid]=[...ids];
     if(pid==='openrouter'){
+      orCatalogSave(list);
       const top=list.slice(0,80); // most-popular 상위 80 = 품질 필터
       report.orFree=top.filter(x=>x.pin===0&&x.pout===0).slice(0,5);
       report.orValue=top.filter(x=>x.pin>0&&x.pin<=1.0&&x.ctx>=128000).sort((a,b)=>(a.pin+3*a.pout)-(b.pin+3*b.pout)).slice(0,8);
@@ -720,6 +765,28 @@ async function hubCheck(force){
   btn.disabled=false;btn.textContent='지금 점검';
   if(report.fresh.length)showToast(`🆕 신모델 ${report.fresh.length}개 감지`);
   if(report.ghost.length)showToast(`☠️ 유령 ID ${report.ghost.length}개 — 레이더 패널 확인`);
+}
+// ── OpenRouter 전체 카탈로그 (일 1회 캐시) — 추천순 정렬: 무료·최신·preview 앞, 비싸고 뻔한 놈 뒤 ──
+function orCatalogSave(list){try{localStorage.setItem('pb_or_catalog',JSON.stringify({t:Date.now(),d:list.map(x=>({m:x.m,n:x.name,c:x.ctx,i:+x.pin.toFixed(3),o:+x.pout.toFixed(3),v:x.vision?1:0,cr:x.created||0}))}));}catch(e){}}
+function orCatalog(){try{const j=JSON.parse(localStorage.getItem('pb_or_catalog')||'null');return j?j.d:[];}catch(e){return [];}}
+function orRank(x){ // 낮을수록 앞
+  const days=x.cr?(Date.now()/1000-x.cr)/86400:9999,prev=/preview|beta|exp|:free|alpha|latest/i.test(x.m+' '+x.n),free=x.i===0&&x.o===0;
+  if(free&&days<60)return 0; if(free)return 1; if(prev&&x.i<=1)return 2; if(days<30&&x.i<=2)return 3;
+  if(x.i<=0.5)return 4; if(x.i<=2)return 5; if(x.i<=5)return 6; return 7;
+}
+function orTag(x){const r=orRank(x);return r<=1?['t-free','FREE']:r===2?['t-prev','PREV']:r===3?['t-new','NEW']:r<=5?['t-cheap','$']:r===6?['','']:['t-exp','$$$'];}
+function orRender(box){
+  const cat=orCatalog();const wrap=el('div','orcat');
+  const q=document.createElement('input');q.className='inp';q.placeholder=cat.length?`전체 ${cat.length}개 검색 (이름·id) — 앞이 추천, 뒤가 비싼 뻔한 놈`:'카탈로그 없음 — 🛰️ 지금 점검 을 눌러라';
+  const list=el('div','orlist');
+  const draw=()=>{list.replaceChildren();const kw=q.value.trim().toLowerCase();
+    const rows=cat.filter(x=>!kw||(x.m+' '+x.n).toLowerCase().includes(kw)).sort((a,b)=>orRank(a)-orRank(b)||(b.cr-a.cr)).slice(0,kw?200:120);
+    rows.forEach(x=>{const r=el('label','orrow');const cb=document.createElement('input');cb.type='checkbox';cb.checked=PROVIDERS.openrouter.models.some(mm=>mm.m===x.m);
+      cb.addEventListener('change',()=>{if(cb.checked){hubAdopt('openrouter',{m:x.m,name:x.n,vision:!!x.v});}else hubForget('openrouter',x.m);renderModels();});
+      const [tc,tt]=orTag(x);r.appendChild(cb);const n=el('span','n',x.n||x.m);n.title=x.m;r.appendChild(n);if(tt)r.appendChild(el('span','t '+tc,tt));
+      r.appendChild(el('span','p',`$${x.i}/${x.o} ·${Math.round(x.c/1000)}k`));list.appendChild(r);});
+    if(!rows.length)list.appendChild(el('div','',' 없음'));};
+  q.addEventListener('input',draw);wrap.append(q,list);draw();box.appendChild(wrap);
 }
 function hubRender(rep){
   document.getElementById('hubStamp').textContent=(localStorage.getItem(HUB.stamp)||'미점검')+(rep.skipped.length?` · 키없음: ${rep.skipped.join(',')}`:'');
