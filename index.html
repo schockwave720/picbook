@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0909-2130 | PicBook Maker</title>
+<title>그림책제조기 v0909-2200 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -122,7 +122,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-2130</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-2200</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -536,7 +536,11 @@ async function genGrok(prompt,model,ratio,signal){
   const d=await r.json();const b=d?.data?.[0]?.b64_json;if(b)return `data:image/png;base64,${b}`;
   if(d?.data?.[0]?.url)return d.data[0].url;throw new Error('Grok: 이미지 없음');
 }
-async function genNAI(tags,neg,ver,wh,signal){
+// ★ NAI 동시 호출 방지 뮤텍스 — 계정당 동시 생성 1장 규칙 (429 Concurrent generation is locked)
+let _naiLock=Promise.resolve();
+function withNaiLock(fn){const prev=_naiLock;let done;_naiLock=new Promise(r=>done=r);return prev.then(()=>fn().finally(done));}
+async function genNAI(tags,neg,ver,wh,signal){return withNaiLock(()=>_genNAI(tags,neg,ver,wh,signal));}
+async function _genNAI(tags,neg,ver,wh,signal){
   const key=getKey('novelai');if(!key)throw new Error('NovelAI 키 필요');
   const isV5=ver!=='v45',model=isV5?'nai-diffusion-5-full':'nai-diffusion-4-5-full';
   const pos=tags||'very aesthetic, best quality, absurdres, no text';
@@ -561,7 +565,13 @@ async function genNAI(tags,neg,ver,wh,signal){
       v4_prompt:{caption:{base_caption:pos,char_captions:[]},use_coords:false,use_order:true},v4_negative_prompt:{caption:{base_caption:negative,char_captions:[]},use_coords:false,use_order:false,legacy_uc:false},characterPrompts:[],
       director_reference_images:[ref],director_reference_descriptions:[{caption:{base_caption:'character&style',char_captions:[]},legacy_uc:false}],director_reference_information_extracted:[1],director_reference_strength_values:[1],director_reference_secondary_strength_values:[0.4]};
   }
-  const fire=(a,m,p)=>fetchWithTimeout('https://image.novelai.net/ai/generate-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({input:pos,model:m,action:a,parameters:p})},TIMEOUT.image,signal);
+  const fire=async(a,m,p)=>{ // 429(동시생성 잠김)·5xx → 최대 8회, 5s→25s 증가 대기 후 재시도
+    for(let i=0;;i++){
+      const r=await fetchWithTimeout('https://image.novelai.net/ai/generate-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({input:pos,model:m,action:a,parameters:p})},TIMEOUT.image,signal,0);
+      if((r.status===429||r.status>=500)&&i<8&&!signal?.aborted){const w=Math.min(25000,5000+i*3000);showToast(`⏳ NAI ${r.status} — ${Math.round(w/1000)}초 뒤 재시도 (${i+1}/8)`);await new Promise(res=>setTimeout(res,w));continue;}
+      return r;
+    }
+  };
   let r=await fire(action,mdl,prm);
   if(!r.ok&&mm!=='off'){ // ☂️ REFFALLBACK: 참조 떼고 맨몸 1회 재발사
     const e=await r.json().catch(()=>({}));showToast('⚠️ NAI 모방 거부('+r.status+') — 참조 떼고 재발사: '+(e.message||'').slice(0,60));
