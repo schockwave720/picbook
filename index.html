@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v1 | PicBook Maker</title>
+<title>그림책제조기 v0909-1750 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
   --bg:#0c0a0f;--surface:#151219;--surface2:#1d1923;--border:#2e2837;
   --accent:#e8b86d;--accent2:#c9a0dc;--green:#7dd3a8;--text:#ede8e0;--dim:#8a8394;
-  --cerebras:#00d4aa;--gemini:#4285f4;--groq:#f55036;--deepseek:#0066ff;--xai:#1da1f2;--openai:#10a37f;--anthropic:#d97706;
+  --cerebras:#00d4aa;--openrouter:#6366f1;--gemini:#4285f4;--groq:#f55036;--deepseek:#0066ff;--xai:#1da1f2;--openai:#10a37f;--anthropic:#d97706;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
@@ -53,7 +53,12 @@ select.inp{width:auto;font-family:'Noto Sans KR',sans-serif}
 .model-cb.sel{border-color:var(--green);background:rgba(125,211,168,.12)}
 .model-cb input{width:9px;height:9px;accent-color:var(--green)}
 .tag{font-size:8px;padding:1px 3px;border-radius:2px;margin-left:1px}
-.tag-best{background:#7c3aed;color:#fff}.tag-hot{background:#ef4444;color:#fff}.tag-fast{background:#f59e0b;color:#000}.tag-new{background:#a855f7;color:#fff}
+.tag-best{background:#7c3aed;color:#fff}.tag-ghost{background:#dc2626;color:#fff}
+.hub{margin-top:8px;border-top:1px dashed var(--border);padding-top:6px;font-size:9px;color:var(--dim)}
+.hub-row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border)}
+.hub-row b{color:var(--text);font-weight:500}.hub-row .m{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim)}
+.hub-btn{font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer}
+.hub-btn:hover{border-color:var(--accent)}.hub-sec{margin:6px 0 2px;color:var(--accent2);font-weight:600}.tag-hot{background:#ef4444;color:#fff}.tag-fast{background:#f59e0b;color:#000}.tag-new{background:#a855f7;color:#fff}
 .opt{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:5px;cursor:pointer;font-size:10px;transition:all .15s}
 .opt:hover{border-color:var(--accent)}
 .opt.sel{border-color:var(--green);background:rgba(125,211,168,.12);color:var(--green)}
@@ -109,7 +114,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v1</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-1750</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -141,6 +146,16 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
   <div class="card-body">
     <div style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">씨앗을 해석하고 논평과 영문 프롬프트를 쓴다. 여러 개 체크하면 큐레이터끼리 경쟁.</div>
     <div id="modelList"></div>
+    <div class="hub" id="hubBar">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span>🛰️ 모델 레이더 · <span id="hubStamp">미점검</span></span>
+        <span style="display:flex;gap:4px;align-items:center">
+          <label style="display:flex;gap:3px;align-items:center;cursor:pointer" title="신모델을 목록에 자동 추가만 한다. 큐레이터 체크는 절대 자동으로 안 바꾼다."><input type="checkbox" id="hubAuto" style="width:auto;margin:0"> 자동채용</label>
+          <button class="hub-btn" id="hubBtn">지금 점검</button>
+        </span>
+      </div>
+      <div id="hubPanel"></div>
+    </div>
   </div>
 </div>
 
@@ -253,8 +268,8 @@ const PROVIDERS = {
     {id:'ant-s5',name:'Sonnet 5',m:'claude-sonnet-5',tag:'fast'},
   ]},
   xai:{name:'🤖 xAI (Grok)',color:'xai',apiType:'openai',baseUrl:'https://api.x.ai/v1',keyId:'xai',vision:true,models:[
-    {id:'grk45',name:'Grok 4.5',m:'grok-4.5',tag:'best'},
-    {id:'grk41n',name:'Grok 4.1 Fast',m:'grok-4-1-fast-non-reasoning',tag:'fast'},
+    {id:'grk46',name:'Grok 4.6',m:'grok-4.6',tag:'best'},
+    {id:'grk43',name:'Grok 4.3 (1M ctx·저가)',m:'grok-4.3',tag:'fast'},
   ]},
   deepseek:{name:'💰 DeepSeek',color:'deepseek',apiType:'openai',baseUrl:'https://api.deepseek.com/v1',keyId:'deepseek',vision:false,models:[
     {id:'ds-v4p',name:'V4 Pro',m:'deepseek-v4-pro',tag:'best'},
@@ -266,7 +281,13 @@ const PROVIDERS = {
   cerebras:{name:'⚡ Cerebras',color:'cerebras',apiType:'openai',baseUrl:'https://api.cerebras.ai/v1',keyId:'cerebras',vision:false,models:[
     {id:'cb-gptoss',name:'GPT-OSS 120B (3000t/s)',m:'gpt-oss-120b',tag:'fast'},
   ]},
+  openrouter:{name:'🛣️ OpenRouter',color:'openrouter',apiType:'openai',baseUrl:'https://openrouter.ai/api/v1',keyId:'openrouter',vision:true,models:[
+    {id:'or-grk46',name:'Grok 4.6 (via OR)',m:'x-ai/grok-4.6',tag:'best'},
+    {id:'or-gem38f',name:'Gemini 3.8 Flash (via OR)',m:'google/gemini-3.8-flash',tag:'fast'},
+  ]},
 };
+// 🛰️ 레이더가 채용한 모델(localStorage)을 부팅 시 복원
+(function(){try{const c=JSON.parse(localStorage.getItem('pb_hub_custom')||'[]');c.forEach(x=>{const p=PROVIDERS[x.pid];if(p&&!p.models.some(m=>m.m===x.m))p.models.push({id:x.id,name:x.name,m:x.m,tag:'new',vision:!!x.vision});});}catch(e){}})();
 const API_KEYS_CONFIG=[
   {id:'openai',label:'🤖 OpenAI (GPT-6 + GPT Image)',placeholder:'sk-...'},
   {id:'gemini',label:'💎 Gemini (텍스트 + NanoBanana)',placeholder:'AIza...'},
@@ -276,6 +297,7 @@ const API_KEYS_CONFIG=[
   {id:'deepseek',label:'💰 DeepSeek',placeholder:'sk-...'},
   {id:'groq',label:'🚀 Groq',placeholder:'gsk_...'},
   {id:'cerebras',label:'⚡ Cerebras',placeholder:'csk-...'},
+  {id:'openrouter',label:'🛣️ OpenRouter (400+모델·가성비 라우팅)',placeholder:'sk-or-v1-...'},
 ];
 // 비누제조기와 동일한 키 이름 → 같은 origin이면 자동 공유
 const apiKeys={};
@@ -335,7 +357,7 @@ ${instr?'ADDITIONAL INSTRUCTIONS FROM THE OWNER (highest priority): '+instr:''}
 
 PROMPT DIALECTS:
 - prompt_natural: 60-120 English words of flowing description for GPT Image / Gemini Nano Banana / Grok. Subject → action → setting → lighting → lens/composition → medium/style → mood. Concrete nouns, no meta-talk ("an image of").
-- prompt_tags: Danbooru-style comma-separated tags for NovelAI V5. Start with quality tags "very aesthetic, masterpiece, no text", then subject/count tags, then scene, then style tags${style.tags?' including: '+style.tags:''}. Use {curly braces} to emphasize the key tag. No sentences.
+- prompt_tags: Danbooru-style comma-separated tags for NovelAI V5. Start with quality tags "very aesthetic, best quality, absurdres, no text" (NEVER use "masterpiece", "4k", "8k", "ultra detailed" — dead tokens for NovelAI), then subject/count tags, then scene, then style tags${style.tags?' including: '+style.tags:''}. Use {curly braces} to emphasize the key tag. No sentences.
 - negative: comma-separated things to avoid${style.neg?' (always include: '+style.neg+')':''}.
 
 OUTPUT: valid JSON only, no markdown fences, no commentary outside JSON:
@@ -391,8 +413,13 @@ async function callCurator(provKey,modelInfo,seed,signal){
     if(provKey==='openai'){body.max_completion_tokens=8000;body.reasoning_effort='low';body.response_format={type:'json_object'};}
     else body.max_tokens=4000;
     if(provKey==='cerebras'){body.reasoning_effort='none';body.reasoning_format='hidden';}
-    const r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify(body)},TIMEOUT.text,signal);
-    const d=await r.json();if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    if(provKey==='xai')body.reasoning_effort='low'; // 큐레이팅에 xhigh 사고는 낭비 — 실패하면 아래서 파라미터 빼고 1회 재시도
+    const hdr={'Content-Type':'application/json','Authorization':'Bearer '+key};
+    if(provKey==='openrouter'){hdr['HTTP-Referer']='https://schockwave720.github.io/aiartwithjp/';hdr['X-Title']='PicBook Maker';}
+    let r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);
+    let d=await r.json();
+    if(d.error&&body.reasoning_effort&&/reasoning/i.test(d.error.message||'')){delete body.reasoning_effort;r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();}
+    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
     raw=(d.choices?.[0]?.message?.content||'').replace(/<think>[\s\S]*?<\/think>/g,'');
   }
   return parseCuratorJSON(raw);
@@ -456,7 +483,7 @@ async function genGrok(prompt,model,ratio,signal){
 async function genNAI(tags,neg,ver,wh,signal){
   const key=getKey('novelai');if(!key)throw new Error('NovelAI 키 필요');
   const isV5=ver!=='v45',model=isV5?'nai-diffusion-5-full':'nai-diffusion-4-5-full';
-  const pos=tags||'very aesthetic, masterpiece, no text';
+  const pos=tags||'very aesthetic, best quality, absurdres, no text';
   const negative=(neg?neg+', ':'')+'worst quality, bad quality, lowres, text, watermark';
   const seed=Math.floor(Math.random()*4294967295),[width,height]=wh;
   const parameters=isV5?{params_version:4,width,height,n_samples:1,sampler:'k_euler_ancestral',steps:23,scale:7,cfg_rescale:0,noise_schedule:'karras',qualityToggle:true,ucPreset:0,legacy:false,negative_prompt:negative,seed,
@@ -626,10 +653,83 @@ function renderModels(){
       const cb=document.createElement('input');cb.type='checkbox';cb.addEventListener('change',()=>lab.classList.toggle('sel',cb.checked));
       lab.appendChild(cb);lab.appendChild(document.createTextNode(m.name));
       if(m.tag){lab.appendChild(el('span','tag tag-'+m.tag,m.tag==='best'?'★':m.tag==='hot'?'🔥':m.tag==='fast'?'⚡':'NEW'));}
+      if(m.ghost){lab.appendChild(el('span','tag tag-ghost','☠️'));lab.title='프로바이더 /models 목록에 없는 ID — 레이더로 확인';}
       body.appendChild(lab);
     });
     box.append(h,body);list.appendChild(box);
   });
+}
+// ===== 🛰️ 모델 레이더 (일 1회 자동 · 신모델 감지 · 유령 ID 검진 · OpenRouter 가성비) =====
+// 원칙: 목록에 '추가'만 한다. 큐레이터 체크(선택)는 절대 자동으로 바꾸지 않는다 — 유령 모델 ID 사고 재발 방지.
+const HUB={key:'pb_hub_known',stamp:'pb_hub_stamp',custom:'pb_hub_custom',auto:'pb_hub_auto'};
+function hubKST(){const d=new Date(Date.now()+9*3600e3);return d.toISOString().slice(0,10);}
+function hubKnown(){try{return JSON.parse(localStorage.getItem(HUB.key)||'{}');}catch(e){return {};}}
+function hubCustom(){try{return JSON.parse(localStorage.getItem(HUB.custom)||'[]');}catch(e){return [];}}
+async function hubListProvider(pid){ // → [{m,name,ctx,pin,pout,vision}] 또는 null(키 없음/실패)
+  const p=PROVIDERS[pid],key=getKey(p.keyId);
+  try{
+    if(pid==='openrouter'){
+      const r=await fetchWithTimeout('https://openrouter.ai/api/v1/models?sort=most-popular',{},20000);const d=await r.json();
+      return (d.data||[]).filter(x=>(x.architecture?.output_modalities||['text']).includes('text')).map(x=>({m:x.id,name:x.name,ctx:x.context_length||0,pin:parseFloat(x.pricing?.prompt||0)*1e6,pout:parseFloat(x.pricing?.completion||0)*1e6,vision:(x.architecture?.input_modalities||[]).includes('image'),created:x.created||0}));
+    }
+    if(!key)return null;
+    if(p.apiType==='gemini'){const r=await fetchWithTimeout(`${p.baseUrl}/models?key=${key}&pageSize=200`,{},20000);const d=await r.json();
+      return (d.models||[]).filter(x=>(x.supportedGenerationMethods||[]).includes('generateContent')).map(x=>({m:x.name.replace(/^models\//,''),name:x.displayName||x.name,ctx:x.inputTokenLimit||0}));}
+    if(p.apiType==='anthropic'){const r=await fetchWithTimeout('https://api.anthropic.com/v1/models?limit=100',{headers:{'x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}},20000);const d=await r.json();
+      return (d.data||[]).map(x=>({m:x.id,name:x.display_name||x.id,ctx:0}));}
+    const r=await fetchWithTimeout(`${p.baseUrl}/models`,{headers:{'Authorization':'Bearer '+key}},20000);const d=await r.json();
+    return (d.data||[]).map(x=>({m:x.id,name:x.id,ctx:x.context_window||x.context_length||0}));
+  }catch(e){console.warn('hub',pid,e.message);return null;}
+}
+function hubAdopt(pid,x){
+  const p=PROVIDERS[pid];if(!p||p.models.some(m=>m.m===x.m))return false;
+  const id='dyn-'+pid+'-'+x.m.replace(/[^a-z0-9]/gi,'').slice(-14);
+  p.models.push({id,name:x.name||x.m,m:x.m,tag:'new',vision:!!x.vision});
+  const c=hubCustom();c.push({pid,id,name:x.name||x.m,m:x.m,vision:!!x.vision});localStorage.setItem(HUB.custom,JSON.stringify(c));
+  return true;
+}
+function hubForget(pid,m){
+  const p=PROVIDERS[pid];if(p)p.models=p.models.filter(x=>x.m!==m);
+  localStorage.setItem(HUB.custom,JSON.stringify(hubCustom().filter(x=>!(x.pid===pid&&x.m===m))));
+}
+async function hubCheck(force){
+  const today=hubKST();if(!force&&localStorage.getItem(HUB.stamp)===today)return;
+  const btn=document.getElementById('hubBtn');btn.disabled=true;btn.textContent='점검 중…';
+  const known=hubKnown(),auto=document.getElementById('hubAuto').checked;
+  const report={fresh:[],ghost:[],orValue:[],orFree:[],skipped:[]};
+  for(const pid of Object.keys(PROVIDERS)){
+    const list=await hubListProvider(pid);
+    if(!list){report.skipped.push(pid);continue;}
+    const ids=new Set(list.map(x=>x.m));
+    // 유령 검진: 설정된 m 이 프로바이더 목록에 없다
+    PROVIDERS[pid].models.forEach(mm=>{mm.ghost=!ids.has(mm.m);if(mm.ghost)report.ghost.push({pid,m:mm.m,name:mm.name});});
+    // 신모델: 이전 점검 이후 처음 보는 id
+    const prev=new Set(known[pid]||[]);
+    if(prev.size){const fresh=list.filter(x=>!prev.has(x.m)&&!PROVIDERS[pid].models.some(mm=>mm.m===x.m));
+      if(pid==='openrouter')fresh.sort((a,b)=>(b.created||0)-(a.created||0));
+      fresh.slice(0,pid==='openrouter'?12:20).forEach(x=>{report.fresh.push({pid,...x});if(auto&&pid!=='openrouter')hubAdopt(pid,x);});}
+    known[pid]=[...ids];
+    if(pid==='openrouter'){
+      const top=list.slice(0,80); // most-popular 상위 80 = 품질 필터
+      report.orFree=top.filter(x=>x.pin===0&&x.pout===0).slice(0,5);
+      report.orValue=top.filter(x=>x.pin>0&&x.pin<=1.0&&x.ctx>=128000).sort((a,b)=>(a.pin+3*a.pout)-(b.pin+3*b.pout)).slice(0,8);
+    }
+  }
+  localStorage.setItem(HUB.key,JSON.stringify(known));localStorage.setItem(HUB.stamp,today);
+  hubRender(report);renderModels();
+  btn.disabled=false;btn.textContent='지금 점검';
+  if(report.fresh.length)showToast(`🆕 신모델 ${report.fresh.length}개 감지`);
+  if(report.ghost.length)showToast(`☠️ 유령 ID ${report.ghost.length}개 — 레이더 패널 확인`);
+}
+function hubRender(rep){
+  document.getElementById('hubStamp').textContent=(localStorage.getItem(HUB.stamp)||'미점검')+(rep.skipped.length?` · 키없음: ${rep.skipped.join(',')}`:'');
+  const pn=document.getElementById('hubPanel');pn.replaceChildren();
+  const row=(x,btnLabel,fn,extra)=>{const r=el('div','hub-row');const l=el('div');l.appendChild(el('b','',(PROVIDERS[x.pid]?.name||x.pid)+' · '+(x.name||x.m)));l.appendChild(el('div','m',x.m+(extra||'')));r.appendChild(l);if(btnLabel){const b=el('button','hub-btn',btnLabel);b.addEventListener('click',()=>{fn();r.remove();renderModels();});r.appendChild(b);}pn.appendChild(r);};
+  if(rep.ghost.length){pn.appendChild(el('div','hub-sec','☠️ 유령 ID (프로바이더 목록에 없음 — 호출하면 404)'));rep.ghost.forEach(x=>row(x,'목록에서 제거',()=>hubForget(x.pid,x.m)));}
+  if(rep.fresh.length){pn.appendChild(el('div','hub-sec','🆕 신모델 (이전 점검 이후 등장)'));rep.fresh.forEach(x=>row(x,'채용',()=>hubAdopt(x.pid,x),x.pin!==undefined?`  $${x.pin.toFixed(2)}/${x.pout.toFixed(2)} ·${Math.round(x.ctx/1000)}k`:''));}
+  if(rep.orValue.length){pn.appendChild(el('div','hub-sec','💸 OpenRouter 가성비 (인기 상위80 중 입력≤$1/M · ctx≥128k · 저가순)'));rep.orValue.forEach(x=>row({pid:'openrouter',...x},'채용',()=>hubAdopt('openrouter',x),`  $${x.pin.toFixed(2)}/${x.pout.toFixed(2)} ·${Math.round(x.ctx/1000)}k`));}
+  if(rep.orFree.length){pn.appendChild(el('div','hub-sec','🆓 OpenRouter 무료 (20req/min·200/day 상한)'));rep.orFree.forEach(x=>row({pid:'openrouter',...x},'채용',()=>hubAdopt('openrouter',x),`  ·${Math.round(x.ctx/1000)}k`));}
+  if(!pn.children.length)pn.appendChild(el('div','','이상 없음 — 신모델·유령 없음.'));
 }
 function renderStyles(){
   const s=document.getElementById('styleSel');s.replaceChildren();
@@ -647,6 +747,10 @@ function init(){
   // 기본 큐레이터: Gemini 3.1 Pro
   const d=document.querySelector('.model-cb[data-mid="gem31p"]');if(d){d.querySelector('input').checked=true;d.classList.add('sel');}
   document.getElementById('goBtn').addEventListener('click',runAll);
+  const ha=document.getElementById('hubAuto');ha.checked=localStorage.getItem(HUB.auto)==='1';ha.addEventListener('change',()=>localStorage.setItem(HUB.auto,ha.checked?'1':'0'));
+  document.getElementById('hubBtn').addEventListener('click',()=>hubCheck(true));
+  document.getElementById('hubStamp').textContent=localStorage.getItem(HUB.stamp)||'미점검';
+  setTimeout(()=>hubCheck(false),1500); // 일 1회(KST) 자동 점검 — 비차단
   document.getElementById('newWorkBtn').addEventListener('click',newWork);
   document.getElementById('exampleBtn').addEventListener('click',()=>{const ex=['비 오는 밤, 척추 수술실. 무영등 아래 잠든 환자와 창밖 네온.','늙은 고양이 한 마리와 위스키 한 잔. 겨울 저녁.','「이카로스의 추락」을 부산 자갈치시장으로 옮겨라.','90년대 OVA풍, 우주정거장 라멘집. 마지막 손님.'];document.getElementById('seed').value=ex[Math.floor(Math.random()*ex.length)];});
   document.getElementById('driveConnectBtn').addEventListener('click',driveConnect);
