@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0909-2000 | PicBook Maker</title>
+<title>그림책제조기 v0909-2130 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -122,7 +122,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-2000</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-2130</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -135,8 +135,17 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 </details>
 
 <details class="card" open>
-  <summary class="card-hdr"><span class="card-title">☁️ Google Drive 저장</span><span class="drive-st no" id="driveSt">미연결</span></summary>
+  <summary class="card-hdr"><span class="card-title">💾 저장 대상 · ☁️ Google Drive</span><span class="drive-st no" id="driveSt">미연결</span></summary>
   <div class="card-body">
+    <div class="optgrid" style="margin-bottom:6px">
+      <label class="opt"><input type="radio" name="saveTarget" value="folder"> 📁 내 PC 폴더</label>
+      <label class="opt"><input type="radio" name="saveTarget" value="drive"> ☁️ Google Drive</label>
+      <label class="opt sel"><input type="radio" name="saveTarget" value="download" checked> ⬇️ 다운로드 폴더</label>
+      <label class="opt"><input type="checkbox" name="autoSave" id="autoSave"> 🔁 생성 즉시 자동 저장</label>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:9px;color:var(--dim)">
+      <button class="btn-sm" id="pickFolderBtn">📁 폴더 선택</button><span id="folderSt">폴더 미지정 (Chrome/Edge PC만 · 폰은 다운로드로)</span>
+    </div>
     <div class="grid">
       <div class="api-card"><label>OAuth 클라이언트 ID (Google Cloud Console → 사용자 인증 정보 → 웹 앱 · 승인된 JS 원본에 이 사이트 주소 추가)</label>
         <div class="api-row"><input type="text" class="inp" id="driveClientId" placeholder="xxxx.apps.googleusercontent.com"><button class="btn-sm" id="driveConnectBtn">연결</button></div></div>
@@ -187,6 +196,21 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
       <label class="opt"><input type="checkbox" name="imgEng" value="grokpro"> Grok Imagine Pro</label>
       <label class="opt"><input type="checkbox" name="imgEng" value="nai"> NovelAI V5 Full</label>
       <label class="opt"><input type="checkbox" name="imgEng" value="nai45"> NovelAI V4.5 Full</label>
+    </div>
+    <div style="margin-top:8px;padding:8px;border:1px dashed var(--border);border-radius:6px">
+      <div style="font-size:9px;font-weight:600;color:var(--accent2);margin-bottom:4px">🖼️ NAI 모방 원본 (흉내 낼 그림 한 장)</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:9.5px;color:var(--dim)">
+        <button class="btn-sm" id="mimicBtn">📎 그림 올리기</button><input type="file" id="mimicFile" accept="image/png,image/jpeg,image/webp" style="display:none">
+        <span id="mimicPreview"></span>
+        <select class="inp" id="mimicMode" style="font-size:10px">
+          <option value="off" selected>끔</option>
+          <option value="i2i">🖼️ img2img — 구도·색·배치 그대로, 내용만 바꿈</option>
+          <option value="vibe">✨ Vibe — 분위기·화풍 흉내 (V4.5로 회항, V5 미출시)</option>
+          <option value="char">👤 캐릭터 흉내 — director ref (☠️ 8/21부터 NAI측 고장, 400이면 자동으로 떼고 재발사)</option>
+        </select>
+        <span id="mimicI2i" style="display:none">강도 <input type="range" id="mimicStr" min="0.2" max="0.95" step="0.05" value="0.6" style="width:90px;vertical-align:middle"><span id="mimicStrV">0.60</span> <span style="opacity:.7">(낮을수록 원본 그대로)</span></span>
+        <span id="mimicVibe" style="display:none">정보 <input type="range" id="mimicInfo" min="0.1" max="1" step="0.1" value="1" style="width:70px;vertical-align:middle"><span id="mimicInfoV">1.0</span> · 세기 <input type="range" id="mimicVStr" min="0.1" max="1" step="0.05" value="0.6" style="width:70px;vertical-align:middle"><span id="mimicVStrV">0.60</span></span>
+      </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:10px;color:var(--dim)">
       <span>장수/장면 <select class="inp" id="imgCount"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></span>
@@ -522,11 +546,67 @@ async function genNAI(tags,neg,ver,wh,signal){
       v4_prompt:{caption:{base_caption:pos,char_captions:[]},use_coords:false,use_order:true},v4_negative_prompt:{caption:{base_caption:negative,char_captions:[]},legacy_uc:false}}
     :{params_version:3,width,height,n_samples:1,sampler:'k_dpmpp_2m_sde',steps:28,scale:5.3,uncond_scale:1,cfg_rescale:0,noise_schedule:'karras',autoSmea:true,qualityToggle:true,ucPreset:0,legacy:false,legacy_v3_extend:false,add_original_image:true,prefer_brownian:true,deliberate_euler_ancestral_bug:false,v4_model_preset:'Illustrative',negative_prompt:negative,seed,
       v4_prompt:{caption:{base_caption:pos,char_captions:[]},use_coords:false,use_order:true},v4_negative_prompt:{caption:{base_caption:negative,char_captions:[]},use_coords:false,use_order:false,legacy_uc:false},characterPrompts:[],reference_image_multiple:[],reference_information_extracted_multiple:[],reference_strength_multiple:[]};
-  const r=await fetchWithTimeout('https://image.novelai.net/ai/generate-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({input:pos,model,action:'generate',parameters})},TIMEOUT.image,signal);
+  let action='generate',mdl=model,prm=parameters;
+  const mm=mimic.b64?document.getElementById('mimicMode').value:'off';
+  if(mm==='i2i'){action='img2img';prm={...prm,image:await mimicResize(width,height),strength:parseFloat(document.getElementById('mimicStr').value)||0.6,noise:0};}
+  else if(mm==='vibe'){ // V5엔 Vibe 미출시 → 4.5 회항 (7-23 검증 포맷: raw base64 + *_multiple)
+    mdl='nai-diffusion-4-5-full';
+    prm={params_version:3,width,height,n_samples:1,sampler:'k_dpmpp_2m_sde',steps:28,scale:5.3,uncond_scale:1,cfg_rescale:0,noise_schedule:'karras',autoSmea:true,qualityToggle:true,ucPreset:0,legacy:false,legacy_v3_extend:false,add_original_image:true,prefer_brownian:true,deliberate_euler_ancestral_bug:false,v4_model_preset:'Illustrative',negative_prompt:negative,seed,
+      v4_prompt:{caption:{base_caption:pos,char_captions:[]},use_coords:false,use_order:true},v4_negative_prompt:{caption:{base_caption:negative,char_captions:[]},use_coords:false,use_order:false,legacy_uc:false},characterPrompts:[],
+      reference_image_multiple:[mimic.b64],reference_information_extracted_multiple:[parseFloat(document.getElementById('mimicInfo').value)||1],reference_strength_multiple:[parseFloat(document.getElementById('mimicVStr').value)||0.6]};
+  } else if(mm==='char'){ // director ref (7-23 검증 포맷) — 4.5 회항, 400이면 우산
+    mdl='nai-diffusion-4-5-full';
+    const ref=await mimicResize(width>height?1536:width<height?1024:1472,width>height?1024:width<height?1536:1472);
+    prm={params_version:3,width,height,n_samples:1,sampler:'k_dpmpp_2m_sde',steps:28,scale:5.3,uncond_scale:1,cfg_rescale:0,noise_schedule:'karras',autoSmea:true,qualityToggle:true,ucPreset:0,legacy:false,legacy_v3_extend:false,add_original_image:true,prefer_brownian:true,deliberate_euler_ancestral_bug:false,v4_model_preset:'Illustrative',negative_prompt:negative,seed,
+      v4_prompt:{caption:{base_caption:pos,char_captions:[]},use_coords:false,use_order:true},v4_negative_prompt:{caption:{base_caption:negative,char_captions:[]},use_coords:false,use_order:false,legacy_uc:false},characterPrompts:[],
+      director_reference_images:[ref],director_reference_descriptions:[{caption:{base_caption:'character&style',char_captions:[]},legacy_uc:false}],director_reference_information_extracted:[1],director_reference_strength_values:[1],director_reference_secondary_strength_values:[0.4]};
+  }
+  const fire=(a,m,p)=>fetchWithTimeout('https://image.novelai.net/ai/generate-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({input:pos,model:m,action:a,parameters:p})},TIMEOUT.image,signal);
+  let r=await fire(action,mdl,prm);
+  if(!r.ok&&mm!=='off'){ // ☂️ REFFALLBACK: 참조 떼고 맨몸 1회 재발사
+    const e=await r.json().catch(()=>({}));showToast('⚠️ NAI 모방 거부('+r.status+') — 참조 떼고 재발사: '+(e.message||'').slice(0,60));
+    r=await fire('generate',model,parameters);
+  }
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error('NAI '+r.status+(e.message?': '+e.message:''));}
   const zip=await JSZip.loadAsync(await r.arrayBuffer());const f=Object.keys(zip.files)[0];if(!f)throw new Error('NAI: 이미지 없음');
   const blob=await zip.files[f].async('blob');
-  return URL.createObjectURL(new Blob([blob],{type:f.endsWith('.webp')?'image/webp':'image/png'}));
+  const url=URL.createObjectURL(new Blob([blob],{type:f.endsWith('.webp')?'image/webp':'image/png'}));SEEDS.set(url,seed);return url;
+}
+// ── 🖼️ 모방 원본 상태 + 캔버스 재포장 (레터박스 PNG, base64) ──
+const mimic={b64:null,dataUrl:null};
+function mimicResize(tw,th){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=tw;c.height=th;const x=c.getContext('2d');x.fillStyle='#000';x.fillRect(0,0,tw,th);const sc=Math.min(tw/img.width,th/img.height);const nw=Math.round(img.width*sc),nh=Math.round(img.height*sc);x.drawImage(img,(tw-nw)/2,(th-nh)/2,nw,nh);res(c.toDataURL('image/png').split(',')[1]);};img.onerror=()=>rej(new Error('모방 원본 로드 실패'));img.src=mimic.dataUrl;});}
+function mimicInit(){
+  const btn=document.getElementById('mimicBtn'),f=document.getElementById('mimicFile'),pv=document.getElementById('mimicPreview'),mode=document.getElementById('mimicMode');
+  btn.addEventListener('click',()=>f.click());
+  f.addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{mimic.dataUrl=r.result;mimic.b64=r.result.split(',')[1];pv.replaceChildren();const im=document.createElement('img');im.src=r.result;im.style.cssText='height:36px;border-radius:3px;vertical-align:middle;margin-right:4px';const x=el('button','btn-sm','✕');x.addEventListener('click',()=>{mimic.b64=null;mimic.dataUrl=null;pv.replaceChildren();});pv.append(im,x);if(mode.value==='off'){mode.value='i2i';mode.dispatchEvent(new Event('change'));}};r.readAsDataURL(file);f.value='';});
+  const upd=()=>{document.getElementById('mimicI2i').style.display=mode.value==='i2i'?'inline':'none';document.getElementById('mimicVibe').style.display=mode.value==='vibe'?'inline':'none';};
+  mode.addEventListener('change',upd);upd();
+  [['mimicStr','mimicStrV',2],['mimicInfo','mimicInfoV',1],['mimicVStr','mimicVStrV',2]].forEach(([a,b,d])=>{const i=document.getElementById(a);i.addEventListener('input',()=>document.getElementById(b).textContent=(+i.value).toFixed(d));});
+}
+
+const SEEDS=new Map(); // url → seed (NAI만)
+function mountImage(slot,url,c){
+  if(!/^(data:image\/|blob:|https:\/\/)/.test(url))throw new Error('잘못된 URL');
+  slot.className='img-card';
+  const im=document.createElement('img');im.src=url;im.alt=c.title;
+  LIGHT.push({src:url,fname:c.fname});
+  im.addEventListener('click',()=>showModal(im.src,c.fname));im.style.cursor='zoom-in';
+  const seed=SEEDS.get(url);
+  const lab=el('div','lab');lab.appendChild(el('span','',c.label+(seed!==undefined?' 🌱'+seed:'')));
+  const bt=el('div');bt.style.display='flex';bt.style.gap='3px';
+  const rb=el('button','btn-sm','🔄');rb.title='같은 프롬프트, 새 시드로 한 장 더';
+  rb.addEventListener('click',()=>{
+    const ns=el('div','img-loading');const sp=el('div','spinner');const lt=el('div','',c.label+' 재생성 중');lt.style.cssText='font-size:10px;color:var(--dim)';
+    const inner=el('div');inner.style.textAlign='center';inner.append(sp,lt);ns.appendChild(inner);slot.after(ns);
+    const n=(c.regen||0)+1;const fn=c.fname.replace(/_r\d+$/,'')+'_r'+n;
+    genImage(c.eng,c.scene,c.ori,null).then(u=>mountImage(ns,u,{...c,fname:fn,label:c.label+' 🔄'+n,regen:n}))
+      .catch(e=>{ns.className='img-err';ns.textContent='❌ '+c.label+': '+e.message;});
+  });
+  const zb=el('button','btn-sm','🔍');zb.addEventListener('click',()=>showModal(im.src,c.fname));
+  const db=el('button','btn-sm','💾');db.title='저장 대상('+saveTarget()+')으로 저장';db.addEventListener('click',()=>saveImage(im.src,c.fname));
+  bt.append(rb,zb,db);lab.appendChild(bt);
+  slot.replaceChildren(im,lab);
+  if(document.getElementById('autoSave')?.checked)saveImage(url,c.fname,false);
 }
 
 // ===== MAIN =====
@@ -574,20 +654,10 @@ async function runAll(){
         jobsTotal++;
         const slot=el('div','img-loading');const sp=el('div','spinner');const lt=el('div','',IMG_LABELS[eng]+' 작업 중');lt.style.cssText='font-size:10px;color:var(--dim)';
         const inner=el('div');inner.style.textAlign='center';inner.append(sp,lt);slot.appendChild(inner);imgs.appendChild(slot);
+        const fname=safeName(`${plan.title||'untitled'}_${si+1}_${eng}_${k+1}`);
         genImage(eng,scene,ori,signal).then(url=>{
           if(runId!==currentRunId)return;
-          if(!/^(data:image\/|blob:|https:\/\/)/.test(url))throw new Error('잘못된 URL');
-          slot.className='img-card';
-          const im=document.createElement('img');im.src=url;im.alt=title;
-          const fname=safeName(`${plan.title||'untitled'}_${si+1}_${eng}_${k+1}`);
-          LIGHT.push({src:url,fname});
-          im.addEventListener('click',()=>showModal(im.src,fname));im.style.cursor='zoom-in';
-          const lab=el('div','lab');lab.appendChild(el('span','',IMG_LABELS[eng]+(count>1?' #'+(k+1):'')));
-          const bt=el('div');bt.style.display='flex';bt.style.gap='3px';
-          const zb=el('button','btn-sm','🔍');zb.addEventListener('click',()=>showModal(im.src,fname));
-          const db=el('button','btn-sm','💾');db.addEventListener('click',()=>downloadImg(im.src,fname));
-          bt.append(zb,db);lab.appendChild(bt);
-          slot.replaceChildren(im,lab);
+          mountImage(slot,url,{eng,scene,ori,title,fname,label:IMG_LABELS[eng]+(count>1?' #'+(k+1):'')});
         }).catch(e=>{if(runId!==currentRunId)return;slot.className='img-err';slot.textContent='❌ '+IMG_LABELS[eng]+': '+e.message;}).finally(()=>{if(runId===currentRunId)tick();});
       }});
     });
@@ -643,7 +713,40 @@ async function driveUpload(blob,name){
   const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{Authorization:'Bearer '+driveToken},body:fd});
   const d=await r.json();if(d.error)throw new Error(d.error.message);return d;
 }
-async function saveImage(src,fname){
+// ── 📁 로컬 폴더 핸들 (IndexedDB에 보관, 권한은 세션마다 재확인) ──
+let folderHandle=null;
+function fsdb(){return new Promise((res,rej)=>{const r=indexedDB.open('picbook',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function fsGet(k){const db=await fsdb();return new Promise((res,rej)=>{const t=db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>rej(t.error);});}
+async function fsSet(k,v){const db=await fsdb();return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite').objectStore('kv').put(v,k);t.onsuccess=()=>res();t.onerror=()=>rej(t.error);});}
+function folderStatus(msg){document.getElementById('folderSt').textContent=msg;}
+async function pickFolder(){
+  if(!window.showDirectoryPicker){showToast('이 브라우저는 폴더 저장 미지원 (Chrome/Edge PC만)');return;}
+  try{folderHandle=await window.showDirectoryPicker({mode:'readwrite'});await fsSet('folder',folderHandle);folderStatus('📁 '+folderHandle.name+' (권한 OK)');
+    const r=document.querySelector('input[name="saveTarget"][value="folder"]');if(r){r.checked=true;document.querySelectorAll('.opt').forEach(o=>{const i=o.querySelector('input[name="saveTarget"]');if(i)o.classList.toggle('sel',i.checked);});localStorage.setItem('picbook_saveTarget','folder');}
+  }catch(e){if(e.name!=='AbortError')showToast('❌ 폴더 선택 실패: '+e.message);}
+}
+async function folderReady(interactive){
+  if(!folderHandle){try{folderHandle=await fsGet('folder');}catch(e){}}
+  if(!folderHandle)return false;
+  let p=await folderHandle.queryPermission({mode:'readwrite'});
+  if(p!=='granted'&&interactive)p=await folderHandle.requestPermission({mode:'readwrite'});
+  folderStatus(p==='granted'?'📁 '+folderHandle.name+' (권한 OK)':'📁 '+folderHandle.name+' — 권한 재확인 필요: 📁 버튼');
+  return p==='granted';
+}
+async function saveToFolder(src,fname){
+  const blob=await srcToBlob(src);const ext=blob.type.includes('webp')?'webp':'png';
+  const fh=await folderHandle.getFileHandle(fname+'.'+ext,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();
+  return fname+'.'+ext;
+}
+function saveTarget(){return document.querySelector('input[name="saveTarget"]:checked')?.value||'download';}
+async function saveImage(src,fname,interactive=true){
+  const t=saveTarget();
+  if(t==='folder'){
+    if(await folderReady(interactive)){try{const n=await saveToFolder(src,fname);showToast('📁 저장됨: '+n);return;}catch(e){showToast('❌ 폴더 저장 실패: '+e.message+' — 다운로드로 대체');}}
+    else showToast('📁 폴더 권한 없음 — 다운로드로 대체 (📁 버튼으로 권한 재확인)');
+    downloadImg(src,fname);return;
+  }
+  if(t==='download'){downloadImg(src,fname);return;}
   if(!driveToken||Date.now()>driveTokenExp){showToast('☁️ Drive 미연결 — 다운로드로 저장');downloadImg(src,fname);return;}
   try{showToast('☁️ Drive 업로드 중...');const blob=await srcToBlob(src);const d=await driveUpload(blob,fname);showToast('☁️ 저장됨: '+d.name);}
   catch(e){showToast('❌ Drive 실패: '+e.message+' — 다운로드로 대체');downloadImg(src,fname);}
@@ -667,7 +770,7 @@ function showModal(src,fname){
   const bar=el('div','modal-bar');
   const bp=el('button','modal-btn','◀');bp.addEventListener('click',e=>{e.stopPropagation();show(idx-1);});
   const bn=el('button','modal-btn','▶');bn.addEventListener('click',e=>{e.stopPropagation();show(idx+1);});
-  const b1=el('button','modal-btn','☁️ Drive 저장');b1.addEventListener('click',e=>{e.stopPropagation();saveImage(src,fname);});
+  const b1=el('button','modal-btn','💾 저장');b1.addEventListener('click',e=>{e.stopPropagation();saveImage(src,fname);});
   const b2=el('button','modal-btn','💾 다운로드');b2.addEventListener('click',e=>{e.stopPropagation();downloadImg(src,fname);});
   const b3=el('button','modal-btn','✕');b3.addEventListener('click',()=>{m.remove();document.removeEventListener('keydown',key);});
   bar.append(bp,b1,b2,b3,bn);m.append(cnt,im,bar);m.addEventListener('click',e=>{if(e.target===m){m.remove();document.removeEventListener('keydown',key);}});document.body.appendChild(m);show(idx);
@@ -816,6 +919,11 @@ function init(){
   document.getElementById('goBtn').addEventListener('click',runAll);
   const ha=document.getElementById('hubAuto');ha.checked=localStorage.getItem(HUB.auto)==='1';ha.addEventListener('change',()=>localStorage.setItem(HUB.auto,ha.checked?'1':'0'));
   document.getElementById('hubBtn').addEventListener('click',()=>hubCheck(true));
+  mimicInit();
+  document.getElementById('pickFolderBtn').addEventListener('click',async()=>{if(await folderReady(true)&&folderHandle){showToast('📁 '+folderHandle.name+' 권한 OK');}else pickFolder();});
+  {const st=localStorage.getItem('picbook_saveTarget')||'download';document.querySelectorAll('input[name="saveTarget"]').forEach(i=>{i.checked=(i.value===st);i.closest('.opt').classList.toggle('sel',i.checked);i.addEventListener('change',()=>localStorage.setItem('picbook_saveTarget',i.value));});
+   const as=document.getElementById('autoSave');as.checked=localStorage.getItem('picbook_autoSave')==='1';as.closest('.opt').classList.toggle('sel',as.checked);as.addEventListener('change',()=>localStorage.setItem('picbook_autoSave',as.checked?'1':'0'));
+   folderReady(false).catch(()=>{});}
   document.getElementById('hubStamp').textContent=localStorage.getItem(HUB.stamp)||'미점검';
   setTimeout(()=>hubCheck(false),1500); // 일 1회(KST) 자동 점검 — 비차단
   document.getElementById('newWorkBtn').addEventListener('click',newWork);
