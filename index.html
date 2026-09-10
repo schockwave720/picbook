@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0909-2200 | PicBook Maker</title>
+<title>그림책제조기 v0910-1500 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -14,7 +14,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 0%,rgba(232,184,109,.06),transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(201,160,220,.05),transparent 50%);pointer-events:none;z-index:0}
-.wrap{max-width:1400px;margin:0 auto;padding:16px;position:relative;z-index:1}
+.wrap{max-width:1900px;margin:0 auto;padding:16px;position:relative;z-index:1}
 .hdr{text-align:center;margin-bottom:18px}
 h1{font-family:'Noto Serif KR',serif;font-size:26px;font-weight:600;letter-spacing:-.5px}
 h1 span{color:var(--accent)}
@@ -35,8 +35,13 @@ select.inp{width:auto;font-family:'Noto Sans KR',sans-serif}
 .api-st{font-size:9px;padding:2px 6px;border-radius:3px;white-space:nowrap}
 .ok{background:rgba(125,211,168,.12);color:var(--green)}
 .no{background:rgba(232,184,109,.12);color:var(--accent)}
-.layout{display:grid;grid-template-columns:340px 1fr;gap:14px}
-@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:14px;align-items:start}
+.left{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow-y:auto;padding-right:2px;scrollbar-width:thin}
+.left .card{margin-bottom:8px;border-radius:8px}.left .card-hdr{padding:7px 10px}.left .card-body{padding:8px}.left .card-title{font-size:11px}
+.left .opt{font-size:10px;padding:3px 6px}.left .inp,.left .note,.left .seed{font-size:11px}.left .seed{min-height:64px}.left .note{min-height:40px}
+.left .grid{grid-template-columns:1fr}.left .upload-box{padding:8px;font-size:10px}
+.hdr{margin-bottom:10px}h1{font-size:20px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.left{position:static;max-height:none}}
 .left{display:flex;flex-direction:column;gap:10px}
 .provider{margin-bottom:6px;border-radius:5px;overflow:hidden;border:1px solid var(--border)}
 .prov-hdr{padding:4px 8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:10px;font-weight:700;color:#fff}
@@ -88,12 +93,17 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 .scene-hdr{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .scene-title{font-family:'Noto Serif KR',serif;font-size:15px;font-weight:600;color:var(--accent)}
 .scene-meta{font-size:9px;color:var(--dim)}
-.scene-body{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.scene-body{padding:14px;display:grid;grid-template-columns:minmax(280px,2fr) minmax(0,3fr);gap:16px}
 @media(max-width:1100px){.scene-body{grid-template-columns:1fr}}
-.commentary{font-family:'Noto Serif KR',serif;font-size:12.5px;line-height:1.9;white-space:pre-wrap;color:var(--text)}
+.commentary{font-family:'Noto Serif KR',serif;font-size:14.5px;line-height:2;white-space:pre-wrap;color:var(--text)}
 .prompt-box{margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px}
 .prompt-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--accent2);letter-spacing:1px;margin-bottom:3px;display:flex;justify-content:space-between}
-.prompt-txt{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.6;white-space:pre-wrap;color:var(--dim);max-height:120px;overflow:auto}
+.prompt-txt{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.6;white-space:pre-wrap;color:var(--dim);max-height:90px;overflow:auto}
+.save-ask{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2000}
+.save-ask .box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:280px;max-width:92vw}
+.save-ask h3{font-size:13px;color:var(--accent);margin-bottom:10px}.save-ask .row{display:flex;flex-direction:column;gap:6px}
+.save-ask button{font-size:12px;padding:9px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;text-align:left}
+.save-ask button:hover{border-color:var(--accent)}.save-ask .foot{margin-top:10px;font-size:10px;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
 .imgs{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
 .img-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden;flex:1;min-width:220px;max-width:420px}
 .img-card img{width:100%;display:block;cursor:pointer}
@@ -122,7 +132,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0909-2200</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0910-1500</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -141,7 +151,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
       <label class="opt"><input type="radio" name="saveTarget" value="folder"> 📁 내 PC 폴더</label>
       <label class="opt"><input type="radio" name="saveTarget" value="drive"> ☁️ Google Drive</label>
       <label class="opt sel"><input type="radio" name="saveTarget" value="download" checked> ⬇️ 다운로드 폴더</label>
-      <label class="opt"><input type="checkbox" name="autoSave" id="autoSave"> 🔁 생성 즉시 자동 저장</label>
+      <label class="opt"><input type="checkbox" name="autoSave" id="autoSave"> 🔁 생성 즉시 자동 저장 (묻지 않고 위 대상으로)</label>
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:9px;color:var(--dim)">
       <button class="btn-sm" id="pickFolderBtn">📁 폴더 선택</button><span id="folderSt">폴더 미지정 (Chrome/Edge PC만 · 폰은 다운로드로)</span>
@@ -149,7 +159,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
     <div class="grid">
       <div class="api-card"><label>OAuth 클라이언트 ID (Google Cloud Console → 사용자 인증 정보 → 웹 앱 · 승인된 JS 원본에 이 사이트 주소 추가)</label>
         <div class="api-row"><input type="text" class="inp" id="driveClientId" placeholder="xxxx.apps.googleusercontent.com"><button class="btn-sm" id="driveConnectBtn">연결</button></div></div>
-      <div class="api-card"><label>저장 폴더 이름 (내 드라이브 루트에 없으면 자동 생성)</label><input type="text" class="inp" id="driveFolder" value="그림책"></div>
+      <div class="api-card"><label>Drive 루트 폴더 (그 아래 날짜 폴더 자동: PicBook/2026-09-10/)</label><input type="text" class="inp" id="driveFolder" value="PicBook"></div>
     </div>
     <div style="font-size:9px;color:var(--dim);margin-top:6px">그림 클릭 = Drive 저장. 미연결이면 다운로드로 대체. 권한 범위는 drive.file (이 앱이 만든 파일만 접근).</div>
   </div>
@@ -613,7 +623,7 @@ function mountImage(slot,url,c){
       .catch(e=>{ns.className='img-err';ns.textContent='❌ '+c.label+': '+e.message;});
   });
   const zb=el('button','btn-sm','🔍');zb.addEventListener('click',()=>showModal(im.src,c.fname));
-  const db=el('button','btn-sm','💾');db.title='저장 대상('+saveTarget()+')으로 저장';db.addEventListener('click',()=>saveImage(im.src,c.fname));
+  const db=el('button','btn-sm','💾');db.title='저장 — 어디에 저장할지 묻는다';db.addEventListener('click',()=>askSave(im.src,c.fname));
   bt.append(rb,zb,db);lab.appendChild(bt);
   slot.replaceChildren(im,lab);
   if(document.getElementById('autoSave')?.checked)saveImage(url,c.fname,false);
@@ -705,14 +715,20 @@ function driveConnect(){
   }});
   tc.requestAccessToken({prompt:driveToken?'':'consent'});
 }
-async function driveFolderId(){
-  const name=document.getElementById('driveFolder').value.trim()||'그림책';
-  const q=encodeURIComponent(`name='${name.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false and 'root' in parents`);
+function dayDir(){const d=new Date(Date.now()+9*3600e3);return d.toISOString().slice(0,10);} // KST 날짜
+async function driveEnsureFolder(name,parent){
+  const q=encodeURIComponent(`name='${name.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false and '${parent}' in parents`);
   const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,{headers:{Authorization:'Bearer '+driveToken}});
   const d=await r.json();if(d.error)throw new Error(d.error.message);
   if(d.files?.length)return d.files[0].id;
-  const c=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:JSON.stringify({name,mimeType:'application/vnd.google-apps.folder'})});
+  const c=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:JSON.stringify({name,mimeType:'application/vnd.google-apps.folder',parents:[parent]})});
   const cd=await c.json();if(cd.error)throw new Error(cd.error.message);return cd.id;
+}
+const _driveDir={};
+async function driveFolderId(){ // <루트>/<YYYY-MM-DD>/ — 제목별 폴더 안 만든다
+  const root=document.getElementById('driveFolder').value.trim()||'PicBook',day=dayDir(),k=root+'/'+day;
+  if(_driveDir[k])return _driveDir[k];
+  const rid=await driveEnsureFolder(root,'root');const did=await driveEnsureFolder(day,rid);return _driveDir[k]=did;
 }
 async function srcToBlob(src){const r=await fetch(src);return r.blob();}
 async function driveUpload(blob,name){
@@ -745,10 +761,28 @@ async function folderReady(interactive){
 }
 async function saveToFolder(src,fname){
   const blob=await srcToBlob(src);const ext=blob.type.includes('webp')?'webp':'png';
-  const fh=await folderHandle.getFileHandle(fname+'.'+ext,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();
+  const dh=await folderHandle.getDirectoryHandle(dayDir(),{create:true});
+  const fh=await dh.getFileHandle(fname+'.'+ext,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();
   return fname+'.'+ext;
 }
 function saveTarget(){return document.querySelector('input[name="saveTarget"]:checked')?.value||'download';}
+let _askSkip=false; // "이번 세션엔 묻지 않기"
+function askSave(src,fname){
+  if(_askSkip){saveImage(src,fname);return;}
+  const cur=saveTarget();
+  const m=el('div','save-ask');const box=el('div','box');box.appendChild(el('h3','','💾 어디에 저장할까?'));
+  const row=el('div','row');
+  [['folder','📁 내 PC 폴더'+(folderHandle?' ('+folderHandle.name+'/'+dayDir()+')':' — 미지정, 누르면 폴더 선택')],['drive','☁️ Google Drive ('+(document.getElementById('driveFolder').value.trim()||'PicBook')+'/'+dayDir()+')'+(driveToken&&Date.now()<driveTokenExp?'':' — 미연결, 다운로드로 대체')],['download','⬇️ 다운로드 폴더']].forEach(([v,t])=>{
+    const b=el('button','',(v===cur?'● ':'○ ')+t);b.addEventListener('click',async()=>{m.remove();
+      if(v==='folder'&&!folderHandle){await pickFolder();if(!folderHandle)return;}
+      const r=document.querySelector(`input[name="saveTarget"][value="${v}"]`);if(r){r.checked=true;document.querySelectorAll('.opt').forEach(o=>{const i=o.querySelector('input[name="saveTarget"]');if(i)o.classList.toggle('sel',i.checked);});localStorage.setItem('picbook_saveTarget',v);}
+      saveImage(src,fname);});row.appendChild(b);});
+  box.appendChild(row);
+  const foot=el('div','foot');const lab=el('label','');const cb=document.createElement('input');cb.type='checkbox';cb.style.width='auto';cb.style.marginRight='4px';lab.append(cb,'이번 세션엔 다시 묻지 말고 선택한 곳으로');
+  cb.addEventListener('change',()=>_askSkip=cb.checked);
+  const x=el('button','','취소');x.style.padding='4px 8px';x.addEventListener('click',()=>m.remove());foot.append(lab,x);box.appendChild(foot);
+  m.appendChild(box);m.addEventListener('click',e=>{if(e.target===m)m.remove();});document.body.appendChild(m);
+}
 async function saveImage(src,fname,interactive=true){
   const t=saveTarget();
   if(t==='folder'){
@@ -780,7 +814,7 @@ function showModal(src,fname){
   const bar=el('div','modal-bar');
   const bp=el('button','modal-btn','◀');bp.addEventListener('click',e=>{e.stopPropagation();show(idx-1);});
   const bn=el('button','modal-btn','▶');bn.addEventListener('click',e=>{e.stopPropagation();show(idx+1);});
-  const b1=el('button','modal-btn','💾 저장');b1.addEventListener('click',e=>{e.stopPropagation();saveImage(src,fname);});
+  const b1=el('button','modal-btn','💾 저장');b1.addEventListener('click',e=>{e.stopPropagation();askSave(src,fname);});
   const b2=el('button','modal-btn','💾 다운로드');b2.addEventListener('click',e=>{e.stopPropagation();downloadImg(src,fname);});
   const b3=el('button','modal-btn','✕');b3.addEventListener('click',()=>{m.remove();document.removeEventListener('keydown',key);});
   bar.append(bp,b1,b2,b3,bn);m.append(cnt,im,bar);m.addEventListener('click',e=>{if(e.target===m){m.remove();document.removeEventListener('keydown',key);}});document.body.appendChild(m);show(idx);
