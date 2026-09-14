@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0914-4 | PicBook Maker</title>
+<title>그림책제조기 v0914-5 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -134,7 +134,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-4</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-5</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -376,7 +376,7 @@ function getKey(id){return apiKeys[id]||localStorage.getItem('soap_key_'+id)||''
 // ===== 스타일 사전 =====
 // hint: 큐레이터 지시 / tags: NAI 태그 접두 / neg: 부정 프롬프트 추가
 const STYLES={
-  nishikie:{name:'니시키에 錦絵 — 에도 다색 목판화 (기본)',hint:'Edo-period nishiki-e (錦絵) full-color woodblock print in the lineage of Harunobu, Utamaro, Hokusai and Hiroshige: layered flat color planes from multiple carved blocks, crisp black key-block outlines, subtle bokashi gradation in skies and water, mica and indigo, patterned kimono textiles, visible washi paper texture and slight registration offset, generous asymmetric composition with a cartouche title and a red artist seal.',tags:'nishiki-e, ukiyo-e, woodblock print, multi-color woodcut, flat colors, bold black outlines, bokashi gradient, washi paper texture, traditional japanese art, edo period, kimono patterns, artist seal',neg:'3d, photorealistic, glossy, lens flare, western oil painting, modern anime'},
+  nishikie:{name:'니시키에 錦絵 목판 — 인쇄기법만, 소재는 씨앗이 정한다 (기본)',hint:'Polychrome WOODBLOCK PRINTING TECHNIQUE only. Render: flat mineral pigment planes from multiple carved blocks, bold black key-block contour, visible washi paper grain, mica sheen, baren burnish marks, slight color misregister, bokashi gradient skies and water. NOT a Japanese scene: subjects may be any ethnicity, any era, any dress — Western, Korean, modern, fantasy. Ban all Japanese-print props: kimono, yukata, obi, kanzashi, geisha, samurai, tatami, shoji, byobu, torii, edo-period streets, Japanese architecture, Japanese text, cartouche or artist seal. The print technique is the style; the subject is decided by the seed alone.',tags:'woodblock print, nishiki-e printing technique, multi-color woodcut, flat mineral pigments, bold black keyblock outlines, visible washi paper grain, mica highlights, baren burnish marks, slight color misregister, bokashi gradients',neg:'kimono, yukata, obi, kanzashi, geisha, maiko, samurai, tatami, shoji, byobu, torii, japanese architecture, edo-period street, japanese text, ukiyo-e figure, artist seal, 3d, photorealistic, glossy, lens flare, modern anime'},
   auto:{name:'자동 — 씨앗에 가장 어울리는 화풍을 큐레이터가 고른다',hint:'Choose the single most fitting visual style for this seed yourself and state it in the commentary.',tags:'',neg:''},
   ukiyoe:{name:'우키요에 목판화',hint:'Edo-period ukiyo-e woodblock print: flat color planes, bold outlines, visible wood grain, indigo and vermilion, Hokusai/Hiroshige lineage.',tags:'ukiyo-e, woodblock print, flat colors, bold outlines, traditional japanese art',neg:'3d, photorealistic, glossy'},
   sumi:{name:'수묵화',hint:'East Asian ink wash painting: expressive brush, gradations of black ink, generous negative space, a single red seal.',tags:'ink wash painting, sumi-e, monochrome, brush strokes, negative space',neg:'color saturated, digital, glossy'},
@@ -430,6 +430,7 @@ function buildCuratorPrompt(){
 ${instr?`=== OWNER'S FREE-TEXT INSTRUCTIONS (ABSOLUTE PRIORITY — override voice preset, length, style preset, everything below) ===\n${instr}\n=== END OWNER'S INSTRUCTIONS ===\n`:''}Given a SEED (a word, theme, line of poetry, scene, or a reference image), you interpret it, write a short Korean commentary, and write English image prompts — one per scene, in two dialects.
 
 STYLE DIRECTION: ${styleDir}
+STYLE ≠ NATIONALITY: a style preset names a rendering TECHNIQUE only. People, wardrobe, architecture and any text in the picture are decided by the SEED (or the owner's direction), never by the technique. Choosing a woodblock / ink / oil preset does not license adding kimono, tatami, Japanese streets or Japanese lettering — that is a nationality, not a technique, and counts as a violation. A Western, Korean or modern subject rendered as nishiki-e is still nishiki-e: the flat pigment planes, black key-block contour, washi grain and mica prove it.
 ${pages>1?`SERIES: Produce exactly ${pages} scenes. ${PROG_HINT[prog]}
 First write a "character_sheet": a compact English description of the protagonist(s), wardrobe, palette and rendering style that must be repeated verbatim inside EVERY scene prompt so the pages stay consistent.`:'Produce exactly 1 scene. character_sheet may be an empty string.'}
 ORIENTATION: ${ori==='auto'?'Decide the best canvas for THIS image: "landscape" (16:9), "portrait" (2:3) or "square". Explain the choice in one clause of the commentary.':'Use "'+ori+'" for every scene.'}
