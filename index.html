@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0914-1 | PicBook Maker</title>
+<title>그림책제조기 v0914-2 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -132,7 +132,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-1</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-2</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -191,20 +191,20 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
   <div class="card-body">
     <div style="font-size:9px;font-weight:600;color:var(--gemini);margin:2px 0">💎 Gemini</div>
     <div class="optgrid">
-      <label class="opt sel"><input type="checkbox" name="imgEng" value="nanobana2" checked> NanoBanana 2</label>
+      <label class="opt"><input type="checkbox" name="imgEng" value="nanobana2"> NanoBanana 2</label>
       <label class="opt"><input type="checkbox" name="imgEng" value="nanobana2lite"> NanoBanana 2 Lite</label>
       <label class="opt"><input type="checkbox" name="imgEng" value="nanobanapro"> NanoBanana Pro (4K)</label>
     </div>
     <div style="font-size:9px;font-weight:600;color:var(--openai);margin:4px 0 2px">🤖 OpenAI</div>
     <div class="optgrid">
-      <label class="opt sel"><input type="checkbox" name="imgEng" value="gpt" checked> GPT Image 2.5 Flare</label>
+      <label class="opt"><input type="checkbox" name="imgEng" value="gpt"> GPT Image 2.5 Flare</label>
       <label class="opt"><input type="checkbox" name="imgEng" value="gptpro"> GPT Image 2.5 Sunburst</label>
     </div>
     <div style="font-size:9px;font-weight:600;color:var(--dim);margin:4px 0 2px">기타</div>
     <div class="optgrid">
       <label class="opt"><input type="checkbox" name="imgEng" value="grok"> Grok Imagine</label>
       <label class="opt"><input type="checkbox" name="imgEng" value="grokpro"> Grok Imagine Pro</label>
-      <label class="opt"><input type="checkbox" name="imgEng" value="nai"> NovelAI V5 Full</label>
+      <label class="opt sel"><input type="checkbox" name="imgEng" value="nai" checked> NovelAI V5 Full (기본)</label>
       <label class="opt"><input type="checkbox" name="imgEng" value="nai45"> NovelAI V4.5 Full</label>
     </div>
     <div style="margin-top:8px;padding:8px;border:1px dashed var(--border);border-radius:6px">
