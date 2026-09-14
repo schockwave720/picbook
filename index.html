@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0914-3 | PicBook Maker</title>
+<title>그림책제조기 v0914-4 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -134,7 +134,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-3</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-4</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -498,22 +498,58 @@ async function callCurator(provKey,modelInfo,seed,signal){
     if(provKey==='cerebras'){ if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';} else {body.reasoning_effort='low';body.reasoning_format='hidden';} body.max_tokens=8000; }
     if(provKey==='groq'){ if(modelInfo.m.includes('gpt-oss')){body.reasoning_effort='low';body.max_tokens=8000;} else if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';body.reasoning_format='hidden';} }
     if(provKey==='deepseek'){body.thinking={type:'disabled'};body.reasoning_effort='none';body.max_tokens=8000;}
-    if(provKey==='openrouter'){body.max_tokens=8000;body.reasoning=modelInfo.re?{effort:'low',exclude:true}:{exclude:true};}
+    if(provKey==='openrouter'){body.max_tokens=8000;body.reasoning=modelInfo.re?{effort:'low',exclude:true}:{exclude:true};body.response_format={type:'json_object'};}
     if(provKey==='xai')body.reasoning_effort='low'; // 큐레이팅에 xhigh 사고는 낭비 — 실패하면 아래서 파라미터 빼고 1회 재시도
     const hdr={'Content-Type':'application/json','Authorization':'Bearer '+key};
     if(provKey==='openrouter'){hdr['HTTP-Referer']='https://schockwave720.github.io/aiartwithjp/';hdr['X-Title']='PicBook Maker';}
     let r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);
     let d=await r.json();
     if(d.error&&body.reasoning_effort&&/reasoning/i.test(d.error.message||'')){delete body.reasoning_effort;r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();}
+    if(d.error&&body.response_format&&/response_format|json/i.test(d.error.message||'')){delete body.response_format;r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();}
     if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
     raw=(d.choices?.[0]?.message?.content||'').replace(/<think>[\s\S]*?<\/think>/g,'');
   }
   return parseCuratorJSON(raw);
 }
+// 약한 모델(Mercury 등)이 흘리는 흔한 JSON 흠집 수선: 문자열 속 생 개행/탭, 후행 쉼표, 스마트 따옴표, 잘린 끝
+function repairJSON(t){
+  t=t.replace(/[\u201c\u201d]/g,'"').replace(/[\u2018\u2019]/g,"'");
+  let out='',inStr=false,esc=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(inStr){
+      if(esc){out+=c;esc=false;continue;}
+      if(c==='\\'){out+=c;esc=true;continue;}
+      if(c==='"'){inStr=false;out+=c;continue;}
+      if(c==='\n'){out+='\\n';continue;}
+      if(c==='\r'){continue;}
+      if(c==='\t'){out+='\\t';continue;}
+      out+=c;continue;
+    }
+    if(c==='"'){inStr=true;out+=c;continue;}
+    out+=c;
+  }
+  if(inStr)out+='"';
+  out=out.replace(/,\s*([}\]])/g,'$1');
+  // 잘린 경우 괄호 닫기
+  let depth=[];inStr=false;esc=false;
+  for(const c of out){
+    if(inStr){if(esc){esc=false;continue;}if(c==='\\'){esc=true;continue;}if(c==='"')inStr=false;continue;}
+    if(c==='"')inStr=true;else if(c==='{')depth.push('}');else if(c==='[')depth.push(']');else if(c==='}'||c===']')depth.pop();
+  }
+  out=out.replace(/,\s*$/,'');
+  while(depth.length)out+=depth.pop();
+  return out;
+}
 function parseCuratorJSON(raw){
   let t=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
   const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)t=t.slice(a,b+1);
-  let j;try{j=JSON.parse(t);}catch(e){throw new Error('큐레이터가 JSON을 안 지킴: '+t.slice(0,80));}
+  let j;
+  try{j=JSON.parse(t);}
+  catch(e){
+    try{j=JSON.parse(repairJSON(t));}
+    catch(e2){throw new Error('큐레이터가 JSON을 안 지킴: '+t.slice(0,80));}
+  }
   if(!Array.isArray(j.scenes)||!j.scenes.length)throw new Error('scenes 없음');
   j.orientation=['landscape','portrait','square'].includes(j.orientation)?j.orientation:'landscape';
   return j;
