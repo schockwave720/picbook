@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0914-2 | PicBook Maker</title>
+<title>그림책제조기 v0914-3 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -43,6 +43,8 @@ select.inp{width:auto;font-family:'Noto Sans KR',sans-serif}
 .hdr{margin-bottom:10px}h1{font-size:20px}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.left{position:static;max-height:none}}
 .left{display:flex;flex-direction:column;gap:10px}
+.left>.card,.left>.btn,.left>.progress-bar{flex:0 0 auto}
+.left .card{overflow:visible}
 .provider{margin-bottom:6px;border-radius:5px;overflow:hidden;border:1px solid var(--border)}
 .prov-hdr{padding:4px 8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:10px;font-weight:700;color:#fff}
 .prov-hdr .cnt{background:rgba(255,255,255,.2);padding:1px 4px;border-radius:3px;font-size:9px}
@@ -132,7 +134,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-2</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-3</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -977,7 +979,7 @@ function init(){
     else{e.preventDefault();inp.checked=!inp.checked;opt.classList.toggle('sel',inp.checked);}
   }));
   // 기본 큐레이터: Gemini 3.1 Pro
-  const d=document.querySelector('.model-cb[data-mid="gem31p"]');if(d){d.querySelector('input').checked=true;d.classList.add('sel');}
+  // 기본 큐레이터 자동 체크 없음 — 사용자가 고른다
   document.getElementById('goBtn').addEventListener('click',runAll);
   const ha=document.getElementById('hubAuto');ha.checked=localStorage.getItem(HUB.auto)==='1';ha.addEventListener('change',()=>localStorage.setItem(HUB.auto,ha.checked?'1':'0'));
   document.getElementById('hubBtn').addEventListener('click',()=>hubCheck(true));
