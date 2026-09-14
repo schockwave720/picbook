@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0914-5 | PicBook Maker</title>
+<title>그림책제조기 v0914-6 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -134,7 +134,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-5</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-6</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -431,6 +431,7 @@ ${instr?`=== OWNER'S FREE-TEXT INSTRUCTIONS (ABSOLUTE PRIORITY — override voic
 
 STYLE DIRECTION: ${styleDir}
 STYLE ≠ NATIONALITY: a style preset names a rendering TECHNIQUE only. People, wardrobe, architecture and any text in the picture are decided by the SEED (or the owner's direction), never by the technique. Choosing a woodblock / ink / oil preset does not license adding kimono, tatami, Japanese streets or Japanese lettering — that is a nationality, not a technique, and counts as a violation. A Western, Korean or modern subject rendered as nishiki-e is still nishiki-e: the flat pigment planes, black key-block contour, washi grain and mica prove it.
+MATURE THEMES: sensuality, nudity and desire are legitimate fine-art subjects (Titian, Courbet, Klimt, Schiele, Modigliani, shunga scholarship). When a seed carries them, keep the painting: convey with implication — posture, gaze, fabric, light, the line of a back — never explicit anatomy or a sexual act, and never anyone who could read as a minor. If the seed asks for more than that, do NOT refuse the whole piece: produce the suggestive fine-art interpretation and say so in one clause of the commentary.
 ${pages>1?`SERIES: Produce exactly ${pages} scenes. ${PROG_HINT[prog]}
 First write a "character_sheet": a compact English description of the protagonist(s), wardrobe, palette and rendering style that must be repeated verbatim inside EVERY scene prompt so the pages stay consistent.`:'Produce exactly 1 scene. character_sheet may be an empty string.'}
 ORIENTATION: ${ori==='auto'?'Decide the best canvas for THIS image: "landscape" (16:9), "portrait" (2:3) or "square". Explain the choice in one clause of the commentary.':'Use "'+ori+'" for every scene.'}
@@ -470,7 +471,20 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 // ===== 큐레이터 호출 =====
 let refImage=null; // {base64,mimeType}
-async function callCurator(provKey,modelInfo,seed,signal){
+// ===== 관능 씨앗 순화 — 노골 어휘 → 미술사 어휘. 큐레이터에게만 보내고 화면엔 원문 =====
+const SOFTEN=[
+  [/음란(?:한|하게|함)?|외설(?:적|스러운)?|야(?:한|하게|시시한)|섹시(?:한)?|에로(?:틱한|한)?/g,'관능적인(sensual, in the fine-art register of Klimt and Schiele)'],
+  [/나체|알몸|누드|벗은 몸|벌거벗은/g,'누드 습작(classical nude study, academic figure drawing)'],
+  [/섹스|성행위|정사|교합|삽입/g,'농밀한 포옹(an intimate embrace, implied not shown)'],
+  [/가슴|젖가슴|유두|엉덩이|사타구니|음부|성기/g,'몸의 곡선(the line of the figure)'],
+  [/속옷|란제리|팬티|브래지어/g,'실크와 레이스(silk and lace, boudoir painting tradition)'],
+  [/야동|포르노|AV|hentai|헨타이/gi,'관능 회화(erotic fine art of the Belle Époque)'],
+];
+function softenSeed(seed){let t=seed||'',hit=0;for(const [re,rep] of SOFTEN){if(re.test(t)){hit++;t=t.replace(re,rep);}re.lastIndex=0;}return {text:t,hit};}
+const SFW_RETRY='\nRETRY NOTE: your previous answer was refused or broken. Keep the mood, composition, palette and story of this seed, but remove nudity and any sexual act — render it as suggestive fine art (a bare shoulder, a glance, silk, candlelight). Answer with the JSON.';
+
+async function callCurator(provKey,modelInfo,seed,signal,retryNote){
+  seed=softenSeed(seed).text+(retryNote||'');
   const prov=PROVIDERS[provKey],key=getKey(prov.keyId);
   if(!key)throw new Error(prov.name+' API 키 없음');
   const sys=buildCuratorPrompt();
@@ -708,7 +722,8 @@ async function runAll(){
 
   await Promise.allSettled(curators.map(async({pid,prov,model})=>{
     let plan=null,err=null;
-    try{plan=await callCurator(pid,model,seed,signal);}catch(e){err=e;}
+    try{plan=await callCurator(pid,model,seed,signal);}
+    catch(e){err=e;if(!signal?.aborted){try{plan=await callCurator(pid,model,seed,signal,SFW_RETRY);err=null;}catch(e2){err=new Error(e.message+' → 순화 재시도도 실패: '+e2.message);}}}
     if(runId!==currentRunId)return;
     if(err){const c=el('div','scene');c.appendChild(sceneHdr(model.name+' — 실패',prov));c.appendChild(el('div','err-box','❌ '+err.message));gal.appendChild(c);return;}
     const ori=oriSel==='auto'?plan.orientation:oriSel;
