@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0918-3 | PicBook Maker</title>
+<title>그림책제조기 v0918-4 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -110,6 +110,14 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 .imgs{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
 .img-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden;flex:1;min-width:220px;max-width:420px}
 .img-card img{width:100%;display:block;cursor:pointer}
+.img-card{position:relative}
+.img-x{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:20px;text-align:center;cursor:pointer;opacity:.55;z-index:2}
+.img-x:hover{opacity:1;background:#b91c1c}
+.ctx-menu{position:fixed;z-index:99999;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px;min-width:150px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.ctx-menu button{display:block;width:100%;text-align:left;padding:7px 10px;border:none;background:none;color:var(--text);font-size:11px;font-family:inherit;cursor:pointer;border-radius:4px}
+.ctx-menu button:hover{background:rgba(255,255,255,.08)}
+.ctx-menu button.danger{color:#f87171}
+.dossier-chip{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--green);border:1px solid rgba(125,211,168,.4);border-radius:12px;padding:2px 8px;margin-top:6px}
 .img-card .lab{padding:5px 8px;font-size:9px;color:var(--dim);display:flex;justify-content:space-between;align-items:center;gap:4px}
 .img-loading{display:flex;align-items:center;justify-content:center;min-height:160px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);flex:1;min-width:220px;max-width:420px}
 .img-err{padding:10px;background:rgba(239,68,68,.08);border-radius:5px;color:#f87171;font-size:10px;flex:1;min-width:220px;max-width:420px}
@@ -135,7 +143,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0918-3</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0918-4</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -254,7 +262,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 </div>
 
 <div class="card">
-  <div class="card-hdr"><span class="card-title">🗣️ 논평 지시</span></div>
+  <div class="card-hdr"><span class="card-title">🗣️ 논평 지시</span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm" id="dossierBtn" title="캐릭터 설정·말투·세계관 문서(txt/md/json) 또는 Tavern/RisuAI PNG 카드 — 큐레이터가 이 인물로 논평한다">📄 설정 파일</button><input type="file" id="dossierFile" accept=".txt,.md,.json,.png,text/plain,application/json,image/png" style="display:none"></span></div>
   <div class="card-body">
     <div class="optgrid">
       <label class="opt"><input type="radio" name="cLen" value="short"> 짧게 (3~4문장)</label>
@@ -262,7 +270,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
       <label class="opt"><input type="radio" name="cLen" value="long"> 길게 (두세 단락)</label>
     </div>
     <div class="optgrid">
-      <label class="opt sel"><input type="radio" name="cTone" value="docent" checked> 미술관 도슨트</label>
+      <label class="opt"><input type="radio" name="cTone" value="docent"> 미술관 도슨트</label>
       <label class="opt"><input type="radio" name="cTone" value="bar"> 위스키 바 옆자리 평론가</label>
       <label class="opt"><input type="radio" name="cTone" value="poet"> 시인</label>
       <label class="opt"><input type="radio" name="cTone" value="surgeon"> 수술기록지</label>
@@ -275,10 +283,11 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
       <label class="opt"><input type="radio" name="cTone" value="copy"> 광고 카피 한 줄</label>
       <label class="opt"><input type="radio" name="cTone" value="arca"> 익명 갤러리 평론</label>
       <label class="opt"><input type="radio" name="cTone" value="custom"> ✍️ 아래 칸대로만</label>
-      <label class="opt"><input type="radio" name="cTone" value="none"> 논평 없이 프롬프트만</label>
+      <label class="opt sel"><input type="radio" name="cTone" value="none" checked> 논평 없이 프롬프트만 (기본)</label>
     </div>
     <textarea class="note" id="cInstr" placeholder="✍️ 자유 지시 — 여기 쓴 글이 위 버튼들보다 강하다. 충돌하면 이 칸이 이긴다.
 예) 반말, 욕 한 번 섞어라 / 의사 동료한테 설명하듯 / 마지막 문장은 반드시 질문 / 한자어 금지 / 3인칭 '그 남자'로만 / 논평 끝에 이 그림의 약점 한 줄"></textarea>
+    <div id="dossierChip"></div>
   </div>
 </div>
 
@@ -423,13 +432,42 @@ const PROG_HINT={
   time:'Same place and subject, time flows across the scenes (dawn→night, or spring→winter).',
 };
 
+// v0918-4: 캐릭터 설정 파일 — 큐레이터 프롬프트 최상위 블록에 실린다 (localStorage picbook_dossier, 30k자 상한)
+let DOSSIER=null;const DOSSIER_MAX=30000;
+function dossierRender(){const c=document.getElementById('dossierChip');if(!c)return;c.replaceChildren();if(!DOSSIER)return;
+  const chip=el('span','dossier-chip','📄 '+DOSSIER.name+' · '+DOSSIER.text.length.toLocaleString()+'자');
+  const x=el('button','btn-sm','✕');x.style.cssText='padding:0 5px;font-size:9px';x.title='설정 파일 떼기';x.addEventListener('click',()=>{DOSSIER=null;localStorage.removeItem('picbook_dossier');dossierRender();showToast('📄 설정 파일 뗐다');});
+  chip.appendChild(x);c.appendChild(chip);}
+function dossierSet(name,text){text=(text||'').trim();if(!text){showToast('⚠️ 빈 파일');return;}
+  if(text.length>DOSSIER_MAX){text=text.slice(0,DOSSIER_MAX);showToast('📄 '+DOSSIER_MAX.toLocaleString()+'자에서 잘랐다');}
+  DOSSIER={name,text};try{localStorage.setItem('picbook_dossier',JSON.stringify(DOSSIER));}catch(e){showToast('⚠️ 브라우저 저장 용량 초과 — 이번 세션만 유지');}
+  const t=document.querySelector('input[name="cTone"]:checked')?.value;
+  if(!t||t==='none'){const r=document.querySelector('input[name="cTone"][value="custom"]');if(r){r.checked=true;document.querySelectorAll('.opt input[name="cTone"]').forEach(i=>i.closest('.opt').classList.toggle('sel',i===r));}}
+  dossierRender();showToast('📄 '+name+' 장착 — 큐레이터가 이 인물로 논평한다');}
+function tavernCardText(buf){ // PNG tEXt chunk 'chara' (Tavern V2/V3, RisuAI 내보내기) → base64 JSON
+  const b=new Uint8Array(buf);if(b.length<8||b[0]!==0x89||b[1]!==0x50)return null;let p=8;
+  while(p+8<=b.length){const len=(b[p]<<24|b[p+1]<<16|b[p+2]<<8|b[p+3])>>>0;const type=String.fromCharCode(b[p+4],b[p+5],b[p+6],b[p+7]);
+    if(type==='tEXt'){const d=b.subarray(p+8,p+8+len);const nul=d.indexOf(0);const key=String.fromCharCode(...d.subarray(0,nul));
+      if(key==='chara'||key==='ccv3'){const b64=String.fromCharCode(...d.subarray(nul+1));try{const j=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0))));const d2=j.data||j;
+        return ['name','description','personality','scenario','mes_example','system_prompt','post_history_instructions'].filter(k=>d2[k]).map(k=>k.toUpperCase()+':\n'+d2[k]).join('\n\n');}catch(e){return null;}}}
+    if(type==='IEND')break;p+=12+len;}
+  return null;}
+(function(){try{const d=JSON.parse(localStorage.getItem('picbook_dossier')||'null');if(d&&d.text)DOSSIER=d;}catch(e){}
+  const b=()=>{const btn=document.getElementById('dossierBtn'),f=document.getElementById('dossierFile');if(!btn||!f)return;dossierRender();
+    btn.addEventListener('click',()=>f.click());
+    f.addEventListener('change',async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;
+      if(file.type==='image/png'||/\.png$/i.test(file.name)){const t=tavernCardText(await file.arrayBuffer());if(!t){showToast('⚠️ 이 PNG엔 캐릭터 카드(chara)가 없다');return;}dossierSet(file.name,t);return;}
+      let t=await file.text();if(/\.json$/i.test(file.name)){try{const j=JSON.parse(t);const d2=j.data||j;const keys=['name','description','personality','scenario','mes_example','system_prompt','system','first_mes'];const parts=keys.filter(k=>d2[k]).map(k=>k.toUpperCase()+':\n'+d2[k]);if(parts.length)t=parts.join('\n\n');}catch(err){}}
+      dossierSet(file.name,t);});};
+  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',b):b();})();
 function buildCuratorPrompt(){
   const style=STYLES[document.getElementById('styleSel').value]||STYLES.auto;
   const styleText=document.getElementById('styleText').value.trim();
   const styleDir=styleText?`OWNER'S STYLE DIRECTION (verbatim, HIGHEST priority — overrides the preset on any conflict; the preset below only fills what the owner left unsaid):\n${styleText}\nPreset fallback: ${style.hint}`:style.hint;
   const len=document.querySelector('input[name="cLen"]:checked')?.value||'normal';
-  const tone=document.querySelector('input[name="cTone"]:checked')?.value||'docent';
-  const instr=document.getElementById('cInstr').value.trim();
+  const tone=document.querySelector('input[name="cTone"]:checked')?.value||'none';
+  let instr=document.getElementById('cInstr').value.trim();
+  if(DOSSIER)instr=(instr?instr+'\n\n':'')+`=== CHARACTER / VOICE DOSSIER (owner-supplied file "${DOSSIER.name}") ===\n${DOSSIER.text}\n=== END DOSSIER ===\nThe commentary must be written IN THIS CHARACTER'S VOICE — its diction, temperament, worldview, and speech habits as described above — as if this character were standing before the picture. Stay in character; never mention the dossier.`;
   const pages=parseInt(document.getElementById('pages').value)||1;
   const prog=document.getElementById('progression').value;
   const ori=document.getElementById('orientation').value;
@@ -474,7 +512,7 @@ async function fetchWithTimeout(url,opts,ms,signal,retry=1){
   }finally{clearTimeout(tid);if(signal)signal.removeEventListener('abort',onAbort);}
 }
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
-// ── 🎙 음성 입력 v0918-3: MediaRecorder → Groq whisper-large-v3-turbo (브라우저 직결, PC 중계 없음) ──
+// ── 🎙 음성 입력 v0918-4: MediaRecorder → Groq whisper-large-v3-turbo (브라우저 직결, PC 중계 없음) ──
 // Nari(Qwen3-ASR)는 인증 WebSocket이라 브라우저가 못 연다 — 사이트는 Groq, 텔레그램 봇은 Nari 직결. 둘 다 bat 없음.
 const VOICE_MAX=120; let micRec=null,micChunks=[],micTimer=null,micSec=0,micTarget='seed';
 ['seed','styleText','cInstr'].forEach(id=>document.getElementById(id)?.addEventListener('focus',()=>micTarget=id));
@@ -719,6 +757,22 @@ function mimicInit(){
 }
 
 const SEEDS=new Map(); // url → seed (NAI만)
+// v0918-4: 카드 삭제 — 화면에서 치우고 라이트박스 목록·시드·blob까지 정리 (저장 안 한 그림은 진짜 사라진다)
+function removeCard(slot,url){
+  const i=LIGHT.findIndex(x=>x.src===url);if(i>=0)LIGHT.splice(i,1);
+  SEEDS.delete(url);if(url.startsWith('blob:')){try{URL.revokeObjectURL(url);}catch(e){}}
+  const imgs=slot.parentElement;slot.remove();
+  if(imgs&&imgs.classList.contains('imgs')&&!imgs.children.length)imgs.appendChild(el('div','',' ')).style.cssText='font-size:9px;color:var(--dim);padding:6px';
+}
+let CTX=null;
+function closeCtx(){if(CTX){CTX.remove();CTX=null;}}
+document.addEventListener('click',closeCtx);document.addEventListener('scroll',closeCtx,true);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCtx();});
+function openCtx(x,y,items){
+  closeCtx();const m=el('div','ctx-menu');
+  items.forEach(([label,fn,cls])=>{const b=el('button',cls||'',label);b.addEventListener('click',e=>{e.stopPropagation();closeCtx();fn();});m.appendChild(b);});
+  document.body.appendChild(m);CTX=m;
+  const r=m.getBoundingClientRect();m.style.left=Math.min(x,innerWidth-r.width-8)+'px';m.style.top=Math.min(y,innerHeight-r.height-8)+'px';
+}
 function mountImage(slot,url,c){
   if(!/^(data:image\/|blob:|https:\/\/)/.test(url))throw new Error('잘못된 URL');
   slot.className='img-card';
@@ -737,9 +791,15 @@ function mountImage(slot,url,c){
       .catch(e=>{ns.className='img-err';ns.textContent='❌ '+c.label+': '+e.message;});
   });
   const zb=el('button','btn-sm','🔍');zb.addEventListener('click',()=>showModal(im.src,c.fname));
+  const xb=el('button','img-x','✕');xb.title='삭제 — 이 창에서 치운다 (저장 안 했으면 진짜 사라짐)';xb.addEventListener('click',e=>{e.stopPropagation();removeCard(slot,im.src);});
+  im.addEventListener('contextmenu',e=>{e.preventDefault();openCtx(e.clientX,e.clientY,[
+    ['💾 저장',()=>askSave(im.src,c.fname)],
+    ['🔄 재생성 (새 시드)',()=>rb.click()],
+    ['🔍 크게',()=>showModal(im.src,c.fname)],
+    ['✕ 삭제',()=>removeCard(slot,im.src),'danger']]);});
   const db=el('button','btn-sm','💾');db.title='저장 — 어디에 저장할지 묻는다';db.addEventListener('click',()=>askSave(im.src,c.fname));
   bt.append(rb,zb,db);lab.appendChild(bt);
-  slot.replaceChildren(im,lab);
+  slot.replaceChildren(xb,im,lab);
   if(document.getElementById('autoSave')?.checked)saveImage(url,c.fname,false);
 }
 
@@ -782,6 +842,11 @@ async function runAll(){
       left.appendChild(promptBox('PROMPT · tags (NovelAI)',scene.prompt_tags));
       if(scene.negative)left.appendChild(promptBox('NEGATIVE',scene.negative));
       if(si===0&&plan.character_sheet)left.appendChild(promptBox('CHARACTER SHEET',plan.character_sheet));
+      {const ab=el('button','btn-sm','🤖 오토V5 주문 복사 (Hermes)');ab.style.marginTop='6px';ab.title='이 장면을 Hermes 오토V5(nai-v5 런처, 대량용)에 넘길 주문문을 클립보드에 — HermessAgent 창에 붙여넣어라';
+        ab.addEventListener('click',()=>{const n=Math.max(4,(parseInt(document.getElementById('imgCount').value)||1)*4);
+          const order=`[picbook 오토V5 주문] ${title}\n장수: ${n} · 판형: ${ori} · 스텝 28\n프롬프트: ${(plan.character_sheet?plan.character_sheet+', ':'')+scene.prompt_tags}\n네거티브: ${scene.negative||''}\n지시: /opt/data/hermess/bin/nai-v5 로 돌리고, 장마다 nai.lock 걸어라. 끝나면 파일 목록 ls -la 로 보고.`;
+          navigator.clipboard.writeText(order).then(()=>showToast('🤖 주문 복사됨 — HermessAgent에 붙여넣어라')).catch(()=>{prompt('복사 실패 — 직접 복사:',order);});});
+        left.appendChild(ab);}
       const imgs=el('div','imgs');
       body.append(left,imgs);card.appendChild(body);gal.appendChild(card);
       // 화가들 출동
