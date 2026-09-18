@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0914-6 | PicBook Maker</title>
+<title>그림책제조기 v0918-1 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -134,7 +134,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0914-6</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0918-1</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -282,7 +282,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 </div>
 
 <div class="card" style="border-color:rgba(232,184,109,.4)">
-  <div class="card-hdr"><span class="card-title" style="font-size:14px;color:#fff">🌱 씨앗</span><span style="font-size:9px;color:var(--dim)">단어 하나도 된다</span></div>
+  <div class="card-hdr"><span class="card-title" style="font-size:14px;color:#fff">🌱 씨앗</span><span style="display:flex;align-items:center;gap:6px"><span id="micSt" style="font-size:9px;color:var(--dim)">단어 하나도 된다 · 말로도 된다</span><button class="btn-sm" id="micBtn" title="Groq Whisper로 받아쓴다 — 마지막에 커서 둔 칸(씨앗/화풍/지시)에 들어간다. 다시 누르면 정지">🎙 말로</button></span></div>
   <div class="card-body">
     <textarea class="seed" id="seed" placeholder="주제, 단어, 시 한 줄, 장면 묘사… 아무거나.
 
@@ -467,6 +467,41 @@ async function fetchWithTimeout(url,opts,ms,signal,retry=1){
   }finally{clearTimeout(tid);if(signal)signal.removeEventListener('abort',onAbort);}
 }
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+// ── 🎙 음성 입력 v0918-1: MediaRecorder → Groq whisper-large-v3-turbo (브라우저 직결, PC 중계 없음) ──
+// Nari(Qwen3-ASR)는 인증 WebSocket이라 브라우저가 못 연다 — 사이트는 Groq, 텔레그램 봇은 Nari 직결. 둘 다 bat 없음.
+const VOICE_MAX=120; let micRec=null,micChunks=[],micTimer=null,micSec=0,micTarget='seed';
+['seed','styleText','cInstr'].forEach(id=>document.getElementById(id)?.addEventListener('focus',()=>micTarget=id));
+function micStatus(t,color){const el=document.getElementById('micSt');if(el){el.textContent=t;el.style.color=color||'var(--dim)';}}
+async function micToggle(){
+  const btn=document.getElementById('micBtn');
+  if(micRec&&micRec.state!=='inactive'){micRec.stop();return;}
+  const key=getKey('groq');if(!key){showToast('🎙 Groq 키가 필요하다 — 설정에서 gsk_… 넣어라');return;}
+  let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});}
+  catch(e){showToast('🎙 마이크 권한 거부됨');return;}
+  const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(m=>MediaRecorder.isTypeSupported(m))||'';
+  micRec=new MediaRecorder(stream,mime?{mimeType:mime}:{});micChunks=[];micSec=0;
+  micRec.ondataavailable=e=>{if(e.data.size>0)micChunks.push(e.data);};
+  micRec.onstop=async()=>{
+    clearInterval(micTimer);stream.getTracks().forEach(t=>t.stop());btn.textContent='🎙 말로';btn.style.borderColor='';
+    const blob=new Blob(micChunks,{type:micRec.mimeType||'audio/webm'});
+    if(blob.size<2000){micStatus('너무 짧다');return;}
+    micStatus('받아쓰는 중… ('+micSec+'초)','var(--accent)');
+    try{
+      const ext=(micRec.mimeType||'').includes('mp4')?'m4a':(micRec.mimeType||'').includes('ogg')?'ogg':'webm';
+      const fd=new FormData();fd.append('file',blob,'voice.'+ext);fd.append('model','whisper-large-v3-turbo');fd.append('language','ko');fd.append('response_format','json');
+      const r=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
+      if(!r.ok){throw new Error('Groq '+r.status+(r.status===401?' 키 오류':r.status===429?' 한도':''));}
+      const txt=((await r.json()).text||'').trim();
+      if(!txt){micStatus('들린 게 없다');return;}
+      const ta=document.getElementById(micTarget)||document.getElementById('seed');
+      ta.value=(ta.value.trim()?ta.value.replace(/\s+$/,'')+'\n':'')+txt;ta.dispatchEvent(new Event('input'));ta.focus();
+      micStatus('🎙 → '+(micTarget==='seed'?'씨앗':micTarget==='styleText'?'화풍':'지시')+' ('+micSec+'초)','var(--green)');
+    }catch(e){micStatus('🎙❌ '+e.message,'#f87171');showToast('🎙 '+e.message);}
+  };
+  micRec.start(1000);btn.textContent='⏹ 정지';btn.style.borderColor='#f87171';
+  micTimer=setInterval(()=>{micSec++;micStatus('● 녹음 '+micSec+'초 — 다시 누르면 정지','#f87171');if(micSec>=VOICE_MAX)micRec.stop();},1000);
+}
+(function(){const b=()=>document.getElementById('micBtn')?.addEventListener('click',micToggle);document.readyState==='loading'?document.addEventListener('DOMContentLoaded',b):b();})();
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
 // ===== 큐레이터 호출 =====
