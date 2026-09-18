@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0918-2 | PicBook Maker</title>
+<title>그림책제조기 v0918-3 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -135,7 +135,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0918-2</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0918-3</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -474,7 +474,7 @@ async function fetchWithTimeout(url,opts,ms,signal,retry=1){
   }finally{clearTimeout(tid);if(signal)signal.removeEventListener('abort',onAbort);}
 }
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
-// ── 🎙 음성 입력 v0918-2: MediaRecorder → Groq whisper-large-v3-turbo (브라우저 직결, PC 중계 없음) ──
+// ── 🎙 음성 입력 v0918-3: MediaRecorder → Groq whisper-large-v3-turbo (브라우저 직결, PC 중계 없음) ──
 // Nari(Qwen3-ASR)는 인증 WebSocket이라 브라우저가 못 연다 — 사이트는 Groq, 텔레그램 봇은 Nari 직결. 둘 다 bat 없음.
 const VOICE_MAX=120; let micRec=null,micChunks=[],micTimer=null,micSec=0,micTarget='seed';
 ['seed','styleText','cInstr'].forEach(id=>document.getElementById(id)?.addEventListener('focus',()=>micTarget=id));
@@ -557,7 +557,7 @@ async function callCurator(provKey,modelInfo,seed,signal,retryNote){
     if(provKey==='deepseek'){body.thinking={type:'disabled'};body.reasoning_effort='none';body.max_tokens=8000;}
     if(provKey==='openrouter'){body.max_tokens=8000;body.reasoning=modelInfo.re?{effort:'low',exclude:true}:{exclude:true};body.response_format={type:'json_object'};}
     if(provKey==='xai')body.reasoning_effort='low';
-    if(provKey==='meta'){body.reasoning_effort='minimal';body.max_completion_tokens=8000;} // Muse Spark: none은 400, 큐레이팅엔 minimal이면 족하다 // 큐레이팅에 xhigh 사고는 낭비 — 실패하면 아래서 파라미터 빼고 1회 재시도
+    if(provKey==='meta'){body.reasoning_effort='minimal';body.max_tokens=8000;} // Muse Spark: none은 400 · max_tokens와 max_completion_tokens는 상호배타 → max_tokens만 // 큐레이팅에 xhigh 사고는 낭비 — 실패하면 아래서 파라미터 빼고 1회 재시도
     const hdr={'Content-Type':'application/json','Authorization':'Bearer '+key};
     if(provKey==='openrouter'){hdr['HTTP-Referer']='https://schockwave720.github.io/aiartwithjp/';hdr['X-Title']='PicBook Maker';}
     let r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);
