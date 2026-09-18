@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>그림책제조기 v0918-4 | PicBook Maker</title>
+<title>그림책제조기 v0918-5 | PicBook Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -143,7 +143,7 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0918-4</span></h1>
+  <h1>📖 그림책<span>제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v0918-5</span></h1>
   <p class="sub">씨앗 한 톨(단어·주제·사진) → 큐레이터가 해석·논평·영문 프롬프트 집필 → 화가(이미지 모델)가 그린다 → 클릭 한 번으로 Google Drive</p>
   <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
     <button id="newWorkBtn" class="btn-sm" style="border-color:rgba(125,211,168,.4);color:var(--green)">🆕 새 작품</button>
@@ -432,7 +432,7 @@ const PROG_HINT={
   time:'Same place and subject, time flows across the scenes (dawn→night, or spring→winter).',
 };
 
-// v0918-4: 캐릭터 설정 파일 — 큐레이터 프롬프트 최상위 블록에 실린다 (localStorage picbook_dossier, 30k자 상한)
+// v0918-5: 캐릭터 설정 파일 — 큐레이터 프롬프트 최상위 블록에 실린다 (localStorage picbook_dossier, 30k자 상한)
 let DOSSIER=null;const DOSSIER_MAX=30000;
 function dossierRender(){const c=document.getElementById('dossierChip');if(!c)return;c.replaceChildren();if(!DOSSIER)return;
   const chip=el('span','dossier-chip','📄 '+DOSSIER.name+' · '+DOSSIER.text.length.toLocaleString()+'자');
@@ -494,6 +494,14 @@ OUTPUT: valid JSON only, no markdown fences, no commentary outside JSON:
 {"title":"한글 제목","style":"chosen style in English","orientation":"landscape|portrait|square","character_sheet":"...","commentary":"한글 논평","scenes":[{"n":1,"scene_ko":"장면 한 줄 요약(한글)","prompt_natural":"...","prompt_tags":"...","negative":"..."}]}`;
 }
 
+// v0918-5: 큐레이터 출력 스키마 — Cerebras strict 규칙(모든 object에 additionalProperties:false, 배열 items 필수). 토큰 레벨 강제라 JSON 이탈 자체가 불가능
+const CURATOR_SCHEMA={type:'object',properties:{
+  title:{type:'string'},style:{type:'string'},orientation:{type:'string',enum:['landscape','portrait','square']},
+  character_sheet:{type:'string'},commentary:{type:'string'},
+  scenes:{type:'array',items:{type:'object',properties:{n:{type:'integer'},scene_ko:{type:'string'},prompt_natural:{type:'string'},prompt_tags:{type:'string'},negative:{type:'string'}},
+    required:['n','scene_ko','prompt_natural','prompt_tags','negative'],additionalProperties:false}}},
+  required:['title','style','orientation','character_sheet','commentary','scenes'],additionalProperties:false};
+
 // ===== RUN STATE / fetch =====
 let isRunning=false,currentRunId=0,runAbort=null;
 const TIMEOUT={text:90000,image:150000};
@@ -512,7 +520,7 @@ async function fetchWithTimeout(url,opts,ms,signal,retry=1){
   }finally{clearTimeout(tid);if(signal)signal.removeEventListener('abort',onAbort);}
 }
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
-// ── 🎙 음성 입력 v0918-4: MediaRecorder → Groq whisper-large-v3-turbo (브라우저 직결, PC 중계 없음) ──
+// ── 🎙 음성 입력 v0918-5: MediaRecorder → Groq whisper-large-v3-turbo (브라우저 직결, PC 중계 없음) ──
 // Nari(Qwen3-ASR)는 인증 WebSocket이라 브라우저가 못 연다 — 사이트는 Groq, 텔레그램 봇은 Nari 직결. 둘 다 bat 없음.
 const VOICE_MAX=120; let micRec=null,micChunks=[],micTimer=null,micSec=0,micTarget='seed';
 ['seed','styleText','cInstr'].forEach(id=>document.getElementById(id)?.addEventListener('focus',()=>micTarget=id));
@@ -590,11 +598,12 @@ async function callCurator(provKey,modelInfo,seed,signal,retryNote){
     const body={model:modelInfo.m,messages};
     if(provKey==='openai'){body.max_completion_tokens=8000;body.reasoning_effort='low';body.response_format={type:'json_object'};}
     else body.max_tokens=4000;
-    if(provKey==='cerebras'){ if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';} else {body.reasoning_effort='low';body.reasoning_format='hidden';} body.max_tokens=8000; }
-    if(provKey==='groq'){ if(modelInfo.m.includes('gpt-oss')){body.reasoning_effort='low';body.max_tokens=8000;} else if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';body.reasoning_format='hidden';} }
-    if(provKey==='deepseek'){body.thinking={type:'disabled'};body.reasoning_effort='none';body.max_tokens=8000;}
+    // Cerebras v0918-5: Qwen3는 기본 reasoning_format=raw → <think>가 content에 실리고, 사고가 max_tokens를 다 먹으면 content가 텅 빔(그게 "JSON을 안 지킴: " 뒤가 비어 있던 이유). hidden + strict json_schema로 봉쇄
+    if(provKey==='cerebras'){ body.reasoning_effort=modelInfo.m.includes('qwen')?'none':'low'; body.reasoning_format='hidden'; body.max_tokens=8000; body.response_format={type:'json_schema',json_schema:{name:'picbook_curator',strict:true,schema:CURATOR_SCHEMA}}; }
+    if(provKey==='groq'){ if(modelInfo.m.includes('gpt-oss')){body.reasoning_effort='low';body.max_tokens=8000;} else if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';body.reasoning_format='hidden';} body.response_format={type:'json_object'}; }
+    if(provKey==='deepseek'){body.thinking={type:'disabled'};body.reasoning_effort='none';body.max_tokens=8000;body.response_format={type:'json_object'};}
     if(provKey==='openrouter'){body.max_tokens=8000;body.reasoning=modelInfo.re?{effort:'low',exclude:true}:{exclude:true};body.response_format={type:'json_object'};}
-    if(provKey==='xai')body.reasoning_effort='low';
+    if(provKey==='xai'){body.reasoning_effort='low';body.response_format={type:'json_object'};}
     if(provKey==='meta'){body.reasoning_effort='minimal';body.max_tokens=8000;} // Muse Spark: none은 400 · max_tokens와 max_completion_tokens는 상호배타 → max_tokens만 // 큐레이팅에 xhigh 사고는 낭비 — 실패하면 아래서 파라미터 빼고 1회 재시도
     const hdr={'Content-Type':'application/json','Authorization':'Bearer '+key};
     if(provKey==='openrouter'){hdr['HTTP-Referer']='https://schockwave720.github.io/aiartwithjp/';hdr['X-Title']='PicBook Maker';}
@@ -603,7 +612,16 @@ async function callCurator(provKey,modelInfo,seed,signal,retryNote){
     if(d.error&&body.reasoning_effort&&/reasoning/i.test(d.error.message||'')){delete body.reasoning_effort;r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();}
     if(d.error&&body.response_format&&/response_format|json/i.test(d.error.message||'')){delete body.response_format;r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();}
     if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-    raw=(d.choices?.[0]?.message?.content||'').replace(/<think>[\s\S]*?<\/think>/g,'');
+    const getRaw=x=>{const m=x.choices?.[0]?.message||{};const c=typeof m.content==='string'?m.content:Array.isArray(m.content)?m.content.map(y=>y.text||'').join('\n'):'';return c.replace(/<think>[\s\S]*?(?:<\/think>|$)/g,'').trim();};
+    raw=getRaw(d);
+    // Cerebras/Groq Qwen: 'none'이 무시되거나 사고가 토큰을 다 삼켜 content가 비면 low+hidden으로 1회 재시도
+    if(!raw&&['cerebras','groq'].includes(provKey)&&modelInfo.m.includes('qwen')){
+      body.reasoning_effort='low';body.reasoning_format='hidden';
+      r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();
+      if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+      raw=getRaw(d);
+    }
+    if(!raw){const fr=d.choices?.[0]?.finish_reason;throw new Error(fr==='length'?'빈 응답 — reasoning이 max_tokens를 다 삼킴':fr==='content_filter'?'프로바이더 콘텐츠 필터에 걸림':'빈 응답 (finish_reason: '+(fr||'?')+')');}
   }
   return parseCuratorJSON(raw);
 }
@@ -644,7 +662,7 @@ function parseCuratorJSON(raw){
   try{j=JSON.parse(t);}
   catch(e){
     try{j=JSON.parse(repairJSON(t));}
-    catch(e2){throw new Error('큐레이터가 JSON을 안 지킴: '+t.slice(0,80));}
+    catch(e2){throw new Error('큐레이터가 JSON을 안 지킴 ('+t.length+'자): '+(t.slice(0,80)||'(빈 문자열)'));}
   }
   if(!Array.isArray(j.scenes)||!j.scenes.length)throw new Error('scenes 없음');
   j.orientation=['landscape','portrait','square'].includes(j.orientation)?j.orientation:'landscape';
@@ -757,7 +775,7 @@ function mimicInit(){
 }
 
 const SEEDS=new Map(); // url → seed (NAI만)
-// v0918-4: 카드 삭제 — 화면에서 치우고 라이트박스 목록·시드·blob까지 정리 (저장 안 한 그림은 진짜 사라진다)
+// v0918-5: 카드 삭제 — 화면에서 치우고 라이트박스 목록·시드·blob까지 정리 (저장 안 한 그림은 진짜 사라진다)
 function removeCard(slot,url){
   const i=LIGHT.findIndex(x=>x.src===url);if(i>=0)LIGHT.splice(i,1);
   SEEDS.delete(url);if(url.startsWith('blob:')){try{URL.revokeObjectURL(url);}catch(e){}}
