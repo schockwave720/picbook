@@ -264,6 +264,11 @@ textarea.note{width:100%;background:var(--bg);border:1px solid var(--border);bor
 <div class="card">
   <div class="card-hdr"><span class="card-title">🗣️ 논평 지시</span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm" id="dossierBtn" title="캐릭터 설정·말투·세계관 문서(txt/md/json) 또는 Tavern/RisuAI PNG 카드 — 큐레이터가 이 인물로 논평한다">📄 설정 파일</button><input type="file" id="dossierFile" accept=".txt,.md,.json,.png,text/plain,application/json,image/png" style="display:none"></span></div>
   <div class="card-body">
+    <div class="optgrid" id="heatGrid" title="큐레이터가 씨앗의 관능·성적 요소를 어디까지 쓰는가. 화가(이미지 모델) 쪽 검열은 별개다.">
+      <label class="opt sel"><input type="radio" name="heat" value="soft" checked> 🧼 순화 — 씨앗 낱말부터 바꿈</label>
+      <label class="opt"><input type="radio" name="heat" value="imply"> 🌫️ 암시 — 씨앗 그대로, 그림은 암시로</label>
+      <label class="opt"><input type="radio" name="heat" value="raw"> 🔞 노골 — 지시한 만큼 정면으로 (성인만)</label>
+    </div>
     <div class="optgrid">
       <label class="opt"><input type="radio" name="cLen" value="short"> 짧게 (3~4문장)</label>
       <label class="opt sel"><input type="radio" name="cLen" value="normal" checked> 보통 (한 단락)</label>
@@ -460,7 +465,14 @@ function tavernCardText(buf){ // PNG tEXt chunk 'chara' (Tavern V2/V3, RisuAI �
       let t=await file.text();if(/\.json$/i.test(file.name)){try{const j=JSON.parse(t);const d2=j.data||j;const keys=['name','description','personality','scenario','mes_example','system_prompt','system','first_mes'];const parts=keys.filter(k=>d2[k]).map(k=>k.toUpperCase()+':\n'+d2[k]);if(parts.length)t=parts.join('\n\n');}catch(err){}}
       dossierSet(file.name,t);});};
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',b):b();})();
+function heatMode(){return document.querySelector('input[name="heat"]:checked')?.value||'soft';}
+const MATURE_HINT={
+  soft:'MATURE THEMES: sensuality, nudity and desire are legitimate fine-art subjects (Titian, Courbet, Klimt, Schiele, Modigliani, shunga scholarship). When a seed carries them, keep the painting: convey with implication — posture, gaze, fabric, light, the line of a back — never explicit anatomy or a sexual act, and never anyone who could read as a minor. If the seed asks for more than that, do NOT refuse the whole piece: produce the suggestive fine-art interpretation and say so in one clause of the commentary.',
+  imply:'MATURE THEMES: sensuality, nudity and desire are legitimate fine-art subjects. Take the seed at its word for mood and subject, but render the erotic charge through implication and composition — posture, gaze, undress in progress, fabric, light — not explicit anatomy or a depicted sexual act. All persons unmistakably adult; never anyone who could read as a minor. Do not refuse; do not lecture.',
+  raw:'MATURE CONTENT — OWNER-DIRECTED, ADULTS ONLY: every depicted person is an unmistakable adult (say so in the prompts: "adult woman", "mature man"); anyone who could read as a minor is the ONE thing you refuse, and you refuse only that part. Otherwise, when the seed or the owner\'s instructions call for nudity, eroticism or a sexual act, render exactly that — directly, vividly, at the intensity asked. Do NOT soften, do NOT swap implication for what was requested, do NOT bury it under scenery: the erotic subject is the composition\'s center and the prompts must say so first. prompt_tags: right after the quality tags put the register ("nsfw", then "nude"/"explicit"/the act as standard Danbooru tags), then the concrete body/pose/act tags, then setting and style. prompt_natural: plain, concrete, unembarrassed description in the language of figure painting — no euphemism, no "suggests", no moralizing. negative: must NOT contain nsfw, nude, sexual or similar. Commentary may be frank.',
+};
 function buildCuratorPrompt(){
+  const heat=heatMode();
   const style=STYLES[document.getElementById('styleSel').value]||STYLES.auto;
   const styleText=document.getElementById('styleText').value.trim();
   const styleDir=styleText?`OWNER'S STYLE DIRECTION (verbatim, HIGHEST priority — overrides the preset on any conflict; the preset below only fills what the owner left unsaid):\n${styleText}\nPreset fallback: ${style.hint}`:style.hint;
@@ -476,7 +488,7 @@ ${instr?`=== OWNER'S FREE-TEXT INSTRUCTIONS (ABSOLUTE PRIORITY — override voic
 
 STYLE DIRECTION: ${styleDir}
 STYLE ≠ NATIONALITY: a style preset names a rendering TECHNIQUE only. People, wardrobe, architecture and any text in the picture are decided by the SEED (or the owner's direction), never by the technique. Choosing a woodblock / ink / oil preset does not license adding kimono, tatami, Japanese streets or Japanese lettering — that is a nationality, not a technique, and counts as a violation. A Western, Korean or modern subject rendered as nishiki-e is still nishiki-e: the flat pigment planes, black key-block contour, washi grain and mica prove it.
-MATURE THEMES: sensuality, nudity and desire are legitimate fine-art subjects (Titian, Courbet, Klimt, Schiele, Modigliani, shunga scholarship). When a seed carries them, keep the painting: convey with implication — posture, gaze, fabric, light, the line of a back — never explicit anatomy or a sexual act, and never anyone who could read as a minor. If the seed asks for more than that, do NOT refuse the whole piece: produce the suggestive fine-art interpretation and say so in one clause of the commentary.
+${MATURE_HINT[heat]}
 ${pages>1?`SERIES: Produce exactly ${pages} scenes. ${PROG_HINT[prog]}
 First write a "character_sheet": a compact English description of the protagonist(s), wardrobe, palette and rendering style that must be repeated verbatim inside EVERY scene prompt so the pages stay consistent.`:'Produce exactly 1 scene. character_sheet may be an empty string.'}
 ORIENTATION: ${ori==='auto'?'Decide the best canvas for THIS image: "landscape" (16:9), "portrait" (2:3) or "square". Explain the choice in one clause of the commentary.':'Use "'+ori+'" for every scene.'}
@@ -493,14 +505,6 @@ PROMPT DIALECTS:
 OUTPUT: valid JSON only, no markdown fences, no commentary outside JSON:
 {"title":"한글 제목","style":"chosen style in English","orientation":"landscape|portrait|square","character_sheet":"...","commentary":"한글 논평","scenes":[{"n":1,"scene_ko":"장면 한 줄 요약(한글)","prompt_natural":"...","prompt_tags":"...","negative":"..."}]}`;
 }
-
-// v0918-5: 큐레이터 출력 스키마 — Cerebras strict 규칙(모든 object에 additionalProperties:false, 배열 items 필수). 토큰 레벨 강제라 JSON 이탈 자체가 불가능
-const CURATOR_SCHEMA={type:'object',properties:{
-  title:{type:'string'},style:{type:'string'},orientation:{type:'string',enum:['landscape','portrait','square']},
-  character_sheet:{type:'string'},commentary:{type:'string'},
-  scenes:{type:'array',items:{type:'object',properties:{n:{type:'integer'},scene_ko:{type:'string'},prompt_natural:{type:'string'},prompt_tags:{type:'string'},negative:{type:'string'}},
-    required:['n','scene_ko','prompt_natural','prompt_tags','negative'],additionalProperties:false}}},
-  required:['title','style','orientation','character_sheet','commentary','scenes'],additionalProperties:false};
 
 // ===== RUN STATE / fetch =====
 let isRunning=false,currentRunId=0,runAbort=null;
@@ -569,10 +573,11 @@ const SOFTEN=[
   [/야동|포르노|AV|hentai|헨타이/gi,'관능 회화(erotic fine art of the Belle Époque)'],
 ];
 function softenSeed(seed){let t=seed||'',hit=0;for(const [re,rep] of SOFTEN){if(re.test(t)){hit++;t=t.replace(re,rep);}re.lastIndex=0;}return {text:t,hit};}
+const RAW_RETRY='\nRETRY NOTE: your previous answer was empty or broken JSON — a formatting problem, not a content problem. Answer again with the same content, valid JSON only.';
 const SFW_RETRY='\nRETRY NOTE: your previous answer was refused or broken. Keep the mood, composition, palette and story of this seed, but remove nudity and any sexual act — render it as suggestive fine art (a bare shoulder, a glance, silk, candlelight). Answer with the JSON.';
 
 async function callCurator(provKey,modelInfo,seed,signal,retryNote){
-  seed=softenSeed(seed).text+(retryNote||'');
+  const heat=heatMode();seed=(heat==='soft'?softenSeed(seed).text:seed)+(retryNote?(heat==='raw'?RAW_RETRY:retryNote):'');
   const prov=PROVIDERS[provKey],key=getKey(prov.keyId);
   if(!key)throw new Error(prov.name+' API 키 없음');
   const sys=buildCuratorPrompt();
@@ -598,12 +603,11 @@ async function callCurator(provKey,modelInfo,seed,signal,retryNote){
     const body={model:modelInfo.m,messages};
     if(provKey==='openai'){body.max_completion_tokens=8000;body.reasoning_effort='low';body.response_format={type:'json_object'};}
     else body.max_tokens=4000;
-    // Cerebras v0918-5: Qwen3는 기본 reasoning_format=raw → <think>가 content에 실리고, 사고가 max_tokens를 다 먹으면 content가 텅 빔(그게 "JSON을 안 지킴: " 뒤가 비어 있던 이유). hidden + strict json_schema로 봉쇄
-    if(provKey==='cerebras'){ body.reasoning_effort=modelInfo.m.includes('qwen')?'none':'low'; body.reasoning_format='hidden'; body.max_tokens=8000; body.response_format={type:'json_schema',json_schema:{name:'picbook_curator',strict:true,schema:CURATOR_SCHEMA}}; }
-    if(provKey==='groq'){ if(modelInfo.m.includes('gpt-oss')){body.reasoning_effort='low';body.max_tokens=8000;} else if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';body.reasoning_format='hidden';} body.response_format={type:'json_object'}; }
-    if(provKey==='deepseek'){body.thinking={type:'disabled'};body.reasoning_effort='none';body.max_tokens=8000;body.response_format={type:'json_object'};}
+    if(provKey==='cerebras'){ if(/qwen-3\.8/.test(modelInfo.m)){body.reasoning_effort='low';body.reasoning_format='hidden';} else if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';} else {body.reasoning_effort='low';body.reasoning_format='hidden';} body.max_tokens=8000; }
+    if(provKey==='groq'){ if(modelInfo.m.includes('gpt-oss')){body.reasoning_effort='low';body.max_tokens=8000;} else if(modelInfo.m.includes('qwen')){body.reasoning_effort='none';body.reasoning_format='hidden';} }
+    if(provKey==='deepseek'){body.thinking={type:'disabled'};body.reasoning_effort='none';body.max_tokens=8000;}
     if(provKey==='openrouter'){body.max_tokens=8000;body.reasoning=modelInfo.re?{effort:'low',exclude:true}:{exclude:true};body.response_format={type:'json_object'};}
-    if(provKey==='xai'){body.reasoning_effort='low';body.response_format={type:'json_object'};}
+    if(provKey==='xai')body.reasoning_effort='low';
     if(provKey==='meta'){body.reasoning_effort='minimal';body.max_tokens=8000;} // Muse Spark: none은 400 · max_tokens와 max_completion_tokens는 상호배타 → max_tokens만 // 큐레이팅에 xhigh 사고는 낭비 — 실패하면 아래서 파라미터 빼고 1회 재시도
     const hdr={'Content-Type':'application/json','Authorization':'Bearer '+key};
     if(provKey==='openrouter'){hdr['HTTP-Referer']='https://schockwave720.github.io/aiartwithjp/';hdr['X-Title']='PicBook Maker';}
@@ -612,16 +616,13 @@ async function callCurator(provKey,modelInfo,seed,signal,retryNote){
     if(d.error&&body.reasoning_effort&&/reasoning/i.test(d.error.message||'')){delete body.reasoning_effort;r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();}
     if(d.error&&body.response_format&&/response_format|json/i.test(d.error.message||'')){delete body.response_format;r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();}
     if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-    const getRaw=x=>{const m=x.choices?.[0]?.message||{};const c=typeof m.content==='string'?m.content:Array.isArray(m.content)?m.content.map(y=>y.text||'').join('\n'):'';return c.replace(/<think>[\s\S]*?(?:<\/think>|$)/g,'').trim();};
-    raw=getRaw(d);
-    // Cerebras/Groq Qwen: 'none'이 무시되거나 사고가 토큰을 다 삼켜 content가 비면 low+hidden으로 1회 재시도
-    if(!raw&&['cerebras','groq'].includes(provKey)&&modelInfo.m.includes('qwen')){
-      body.reasoning_effort='low';body.reasoning_format='hidden';
+    const pick=dd=>{const m=dd.choices?.[0]?.message||{};return (m.content||m.reasoning_content||m.reasoning||'').replace(/<think>[\s\S]*?<\/think>/g,'');};
+    raw=pick(d);
+    if(!raw.trim()&&(body.reasoning_effort||body.reasoning_format||body.reasoning)){ // 빈 응답: 추론 파라미터 떼고 1회
+      delete body.reasoning_effort;delete body.reasoning_format;delete body.reasoning;
       r=await fetchWithTimeout(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdr,body:JSON.stringify(body)},TIMEOUT.text,signal);d=await r.json();
-      if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-      raw=getRaw(d);
-    }
-    if(!raw){const fr=d.choices?.[0]?.finish_reason;throw new Error(fr==='length'?'빈 응답 — reasoning이 max_tokens를 다 삼킴':fr==='content_filter'?'프로바이더 콘텐츠 필터에 걸림':'빈 응답 (finish_reason: '+(fr||'?')+')');}
+      if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));raw=pick(d);}
+    if(!raw.trim())throw new Error('빈 응답 (finish_reason: '+(d.choices?.[0]?.finish_reason||'?')+(d.choices?.[0]?.message?.refusal?' · refusal':'')+')');
   }
   return parseCuratorJSON(raw);
 }
@@ -662,7 +663,7 @@ function parseCuratorJSON(raw){
   try{j=JSON.parse(t);}
   catch(e){
     try{j=JSON.parse(repairJSON(t));}
-    catch(e2){throw new Error('큐레이터가 JSON을 안 지킴 ('+t.length+'자): '+(t.slice(0,80)||'(빈 문자열)'));}
+    catch(e2){throw new Error('큐레이터가 JSON을 안 지킴: '+t.slice(0,80));}
   }
   if(!Array.isArray(j.scenes)||!j.scenes.length)throw new Error('scenes 없음');
   j.orientation=['landscape','portrait','square'].includes(j.orientation)?j.orientation:'landscape';
@@ -1176,6 +1177,8 @@ function init(){
   document.getElementById('driveFolder').addEventListener('input',e=>localStorage.setItem('picbook_drive_folder',e.target.value));
   document.getElementById('cInstr').value=localStorage.getItem('picbook_cinstr')||'';
   document.getElementById('cInstr').addEventListener('input',e=>localStorage.setItem('picbook_cinstr',e.target.value));
+  {const h=localStorage.getItem('picbook_heat');if(h){document.querySelectorAll('input[name="heat"]').forEach(i=>{i.checked=(i.value===h);i.closest('.opt').classList.toggle('sel',i.checked);});}
+   document.querySelectorAll('input[name="heat"]').forEach(i=>i.addEventListener('change',()=>{if(i.checked)localStorage.setItem('picbook_heat',i.value);}));}
   const rb=document.getElementById('refBox'),rf=document.getElementById('refFile');
   rb.addEventListener('click',()=>rf.click());
   rf.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;if(!['image/png','image/jpeg','image/webp'].includes(f.type)){showToast('⚠️ png/jpg/webp만');return;}
